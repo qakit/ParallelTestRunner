@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Akka.Routing;
@@ -18,13 +19,7 @@ namespace Akka.NUnit.Runtime
 
 			Receive<TestRun>(input =>
 			{
-				// TODO load assembly and collect jobs
-
-				var random = new Random();
-				var jobs = from i in Enumerable.Range(0, random.Next(10, 20))
-					select new Job(input.Assembly, "Fixture" + (i + 1), "http://localhost/artifacts/9.9.9.9");
-
-				foreach (var job in jobs)
+				foreach (var job in LoadTestFixtures(input.Assembly))
 				{
 					router.Tell(job, Self);
 				}
@@ -41,6 +36,17 @@ namespace Akka.NUnit.Runtime
 				Console.WriteLine("Suite {0} completed on '{1}'. Failed {2}. Passed {3}.",
 					report.Suite, report.Agent, report.Failed, report.Passed);
 			});
+		}
+
+		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)
+		{
+			// TODO load assembly and collect jobs
+
+			var random = new Random();
+			var artifactsUrl = "http://localhost/artifacts/9.9.9.9";
+
+			return from i in Enumerable.Range(0, random.Next(10, 20))
+				select new Job(assemblyPath, "Fixture" + (i + 1), artifactsUrl);
 		}
 	}
 }
