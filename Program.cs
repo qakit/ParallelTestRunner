@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Akka.Actor;
 
 namespace Akka.NUnit.Runtime
@@ -16,7 +17,8 @@ namespace Akka.NUnit.Runtime
 				system.ActorOf<Worker>("worker" + i);
 			}
 
-			manager.Tell(new TestRun("tests.dll"));
+			var workDir = Environment.CurrentDirectory;
+			manager.Tell(new TestRun(Path.Combine(workDir, "tests.dll")));
 
 			Console.ReadLine();
 		}

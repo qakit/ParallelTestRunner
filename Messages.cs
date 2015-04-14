@@ -12,12 +12,12 @@
 
 	public class TestReport
 	{
-		public TestReport(string agent, string test, bool failed, string error)
+		public TestReport(string agent, string test, bool failed, string output)
 		{
 			Agent = agent;
 			Test = test;
 			Failed = failed;
-			Error = error;
+			Output = output;
 		}
 
 		/// <summary>
@@ -26,7 +26,7 @@
 		public string Agent { get; private set; }
 		public string Test { get; private set; }
 		public bool Failed { get; private set; }
-		public string Error { get; private set; }
+		public string Output { get; private set; }
 
 		// TODO add duration
 

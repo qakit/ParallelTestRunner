@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using Akka.Actor;
 using Akka.Routing;
+using NUnit.Engine;
 
 namespace Akka.NUnit.Runtime
 {
@@ -27,12 +30,19 @@ namespace Akka.NUnit.Runtime
 
 			Receive<TestReport>(report =>
 			{
+				// TODO integrate teamcity reporter
 				var status = report.Failed ? "FAILED" : "PASSED";
-				Console.WriteLine("Test {0} is {1} on agent '{2}'", report.Test, status, report.Agent);
+				Console.WriteLine("Test {0} is {1} on agent '{2}'.", report.Test, status, report.Agent);
+				if (!string.IsNullOrEmpty(report.Output))
+				{
+					Console.WriteLine("Output:");
+					Console.WriteLine(report.Output);
+				}
 			});
 
 			Receive<SuiteReport>(report =>
 			{
+				// TODO teamcity reporter
 				Console.WriteLine("Suite {0} completed on '{1}'. Failed {2}. Passed {3}.",
 					report.Suite, report.Agent, report.Failed, report.Passed);
 			});
@@ -40,13 +50,29 @@ namespace Akka.NUnit.Runtime
 
 		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)
 		{
-			// TODO load assembly and collect jobs
+			// TODO zip package with testing assemblies
+			// TODO copy zip package to HTTP server dir
 
-			var random = new Random();
-			var artifactsUrl = "http://localhost/artifacts/9.9.9.9";
+			var artifactsUrl = assemblyPath; // TODO URL to http server
 
-			return from i in Enumerable.Range(0, random.Next(10, 20))
-				select new Job(assemblyPath, "Fixture" + (i + 1), artifactsUrl);
+			using (var engine = TestEngineActivator.CreateInstance())
+			{
+				var package = new TestPackage(new[] {assemblyPath});
+				package.Settings["ProcessModel"] = "Single";
+				var builder = new TestFilterBuilder();
+				var filter = builder.GetFilter();
+
+				using (var runner = engine.GetRunner(package))
+				{
+					var tests = XElement.Load(new XmlNodeReader(runner.Explore(filter)));
+
+					return from d in tests.Descendants()
+						let type = d.GetAttribute("type")
+						let name = d.GetAttribute("fullname")
+						where name != null && type != null && type == "TestFixture"
+						select new Job(assemblyPath, name, artifactsUrl);
+				}
+			}
 		}
 	}
 }

@@ -1,5 +1,8 @@
 using System;
+using System.Xml;
+using System.Xml.Linq;
 using Akka.Actor;
+using NUnit.Engine;
 
 namespace Akka.NUnit.Runtime
 {
@@ -20,20 +23,27 @@ namespace Akka.NUnit.Runtime
 				var manager = Context.ActorOf<Manager>();
 				var agentName = Self.Path.Name; // ToStringWithAddress();
 
-				var random = new Random();
-				var passCount = 0;
-				var failCount = 0;
-				
-				for (var i = 0; i < random.Next(10, 100); i++)
+				using (var engine = TestEngineActivator.CreateInstance())
 				{
-					var failed = random.NextDouble() >= 0.5;
-					if (failed) failCount++;
-					else passCount++;
+					var package = new TestPackage(new[] {input.Assembly}); // TODO now assuming assembly path
+					package.Settings["ProcessModel"] = "Single";
 
-					manager.Tell(new TestReport(agentName, "Test" + (i + 1), failed, failed ? "ops" : null), Self);
+					var builder = new TestFilterBuilder
+					{
+						// TODO deal with fixture filter, it seems we need to send all tests from test fixture
+						Tests = {input.Fixture}
+					};
+					
+					var filter = builder.GetFilter();
+					
+					var listener = new RemoteReporter(Self, manager, agentName);
+
+					using (var runner = engine.GetRunner(package))
+					{
+						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
+						// Console.WriteLine(results.ToString());
+					}
 				}
-
-				manager.Tell(new SuiteReport(agentName, input.Fixture, passCount, failCount));
 			});
 		}
 	}

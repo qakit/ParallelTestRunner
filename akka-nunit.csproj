@@ -62,10 +62,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="Manager.cs" />
     <Compile Include="Messages.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TeamCityReporter.cs" />
+    <Compile Include="RemoteReporter.cs" />
+    <Compile Include="TestFilterBuilder.cs" />
     <Compile Include="Worker.cs" />
   </ItemGroup>
   <ItemGroup>
