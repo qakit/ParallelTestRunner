@@ -1,0 +1,11 @@
+# use glob syntax
+syntax: glob
+
+bin
+obj
+packages
+
+*.suo
+*.user
+*.log
+*.nupkg
