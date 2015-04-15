@@ -5,25 +5,30 @@ using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
+using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
+using Akka.NUnit.Runtime.Reporters;
 using NUnit.Engine;
 using TestRun = Akka.NUnit.Runtime.Messages.TestRun;
 
 namespace Akka.NUnit.Runtime
 {
-	public sealed class Manager : ReceiveActor
+	public class Manager : ReceiveActor
 	{
+		protected ILoggingAdapter Log = Context.GetLogger();
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
 		private readonly List<RunningJob> _runningJobs = new List<RunningJob>(); 
 
 		public Manager()
 		{
-			Receive<RegisterWorker>(newWorker =>
+			Receive<RegisterWorker>(_ =>
 			{
-				Console.WriteLine("Created new worker {0}", Sender.Path.Name);
+				Log.Info("New worker {0}", Sender.Path.Name);
+
 				Context.Watch(Sender);
 				_workers.Add(Sender);
+
 				if (_jobQueue.Count > 0)
 				{
 					Sender.Tell(new JobIsReady());
@@ -33,7 +38,7 @@ namespace Akka.NUnit.Runtime
 			Receive<RequestJob>(request =>
 			{
 				var worker = Sender;
-				Console.WriteLine("Worker {0} requests for a work", worker.Path.Name);
+				Log.Debug("Worker {0} requests job", worker.Path.Name);
 
 				//TODO handle no work to be done situation;
 				//TODO load tests somehwere else not here
@@ -70,7 +75,7 @@ namespace Akka.NUnit.Runtime
 
 			Receive<TestRun>(input =>
 			{
-				Console.WriteLine("New test run for {0}", input.Assembly);
+				Log.Info("New test run of assembly {0}", input.Assembly);
 
 				var testFixtures = LoadTestFixtures(input.Assembly);
 				foreach (var job in testFixtures)
@@ -90,12 +95,15 @@ namespace Akka.NUnit.Runtime
 			Receive<TestEvent>(e =>
 			{
 				// TODO integrate teamcity reporter
-				Console.WriteLine("{0} {1} is {2} by '{3}'.", e.Kind, e.FullName, e.Result, e.Worker);
+				Log.Info("{0} {1} is {2} by '{3}'.", e.Kind, e.FullName, e.Result, e.Worker);
+
+				var reporter = new TeamCityReporter(Console.Out);
+				reporter.Report(e);
 
 				if (!string.IsNullOrEmpty(e.Output))
 				{
-					Console.WriteLine("Output:");
-					Console.WriteLine(e.Output);
+					Log.Info("Output:");
+					Log.Info(e.Output);
 				}
 			});
 
@@ -104,7 +112,7 @@ namespace Akka.NUnit.Runtime
 				var worker = t.ActorRef;
 				if (IsKnown(worker))
 				{
-					Console.WriteLine("Killing worker {0}", worker.Path.Name);
+					Log.Info("Killing worker {0}", worker.Path.Name);
 					ReaddTaskIfAny(worker);
 					_workers.Remove(worker);
 				}

@@ -1,7 +1,7 @@
-using System;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
+using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
 using Akka.NUnit.Runtime.Reporters;
 using NUnit.Engine;
@@ -13,6 +13,7 @@ namespace Akka.NUnit.Runtime
 	/// </summary>
 	public class Worker : ReceiveActor
 	{
+		protected ILoggingAdapter Log = Context.GetLogger();
 		private ActorSelection _master;
 
 		public Worker()
@@ -24,22 +25,22 @@ namespace Akka.NUnit.Runtime
 		{
 			Receive<SetMaster>(input =>
 			{
-				Console.WriteLine("Sender: {0}", Sender.Path);
-				Console.WriteLine("Setting new master {0} for worker", input.Master.PathString);
+				Log.Debug("Sender: {0}", Sender.Path);
+				Log.Info("Setting new master {0} for worker {1}", input.Master.PathString, Self.Path.Name);
 				_master = input.Master;
 				_master.Tell(new RegisterWorker(), Self);
 			});
 
 			Receive<JobIsReady>(ready =>
 			{
-				Console.WriteLine("Worker requests for a work");
+				Log.Debug("There are new jobs");
 				_master.Tell(new RequestJob());
 			});
 
 			Receive<Job>(job =>
 			{
-				Console.WriteLine("Downloading artifacts {0}", job.ArtifactsUrl);
-				Console.WriteLine("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
+				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
+				Log.Info("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
 
 				using (var engine = TestEngineActivator.CreateInstance())
 				{
@@ -49,7 +50,6 @@ namespace Akka.NUnit.Runtime
 
 					var builder = new TestFilterBuilder
 					{
-						// TODO deal with fixture filter, it seems we need to send all tests from test fixture
 						Tests = { job.TestFixture }
 					};
 
@@ -60,7 +60,6 @@ namespace Akka.NUnit.Runtime
 					using (var runner = engine.GetRunner(package))
 					{
 						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
-						Console.WriteLine(results.ToString());
 					}
 				}
 				
