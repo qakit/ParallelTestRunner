@@ -2,7 +2,7 @@
 
 namespace Akka.NUnit.Runtime
 {
-	public class RunningTest
+	public class RunningJob
 	{
 		public string AssemblyPath;
 		public string ArtifactsUri;

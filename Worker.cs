@@ -64,8 +64,7 @@ namespace Akka.NUnit.Runtime
 					}
 				}
 				
-				_master.Tell(new JobCompleted(Self));
-				_master.Tell(new RequestJob());
+				_master.Tell(new JobCompleted(), Self);
 			});
 
 			Receive<NoJob>(_ => { });

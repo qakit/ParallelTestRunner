@@ -1,6 +1,4 @@
-﻿using Akka.Actor;
-
-namespace Akka.NUnit.Runtime.Messages
+﻿namespace Akka.NUnit.Runtime.Messages
 {
 	// MANAGER MESSAGES
 
@@ -11,14 +9,5 @@ namespace Akka.NUnit.Runtime.Messages
 
 	public sealed class RegisterWorker { }
 	public sealed class RequestJob { }
-
-	public sealed class JobCompleted
-	{
-		public JobCompleted(IActorRef worker)
-		{
-			Worker = worker;
-		}
-
-		public IActorRef Worker { get; private set; }
-	}
+	public sealed class JobCompleted {}
 }

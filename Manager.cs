@@ -15,9 +15,7 @@ namespace Akka.NUnit.Runtime
 	{
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
-
-		// TODO consider to remove, is it needed?
-		private readonly List<RunningTest> _runningTests = new List<RunningTest>(); 
+		private readonly List<RunningJob> _runningJobs = new List<RunningJob>(); 
 
 		public Manager()
 		{
@@ -43,7 +41,7 @@ namespace Akka.NUnit.Runtime
 				Job job;
 				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out job))
 				{
-					var runnintTest = new RunningTest
+					var runnintTest = new RunningJob
 					{
 						TestFixtureName = job.TestFixture,
 						ArtifactsUri = job.ArtifactsUrl,
@@ -51,7 +49,7 @@ namespace Akka.NUnit.Runtime
 						Worker = worker
 					};
 
-					_runningTests.Add(runnintTest);
+					_runningJobs.Add(runnintTest);
 					worker.Tell(job, Self);
 				}
 				else
@@ -60,14 +58,32 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
+			Receive<JobCompleted>(_ =>
+			{
+				_runningJobs.RemoveAll(job => job.Worker.Equals(Sender));
+
+				if (_jobQueue.Count > 0)
+				{
+					Sender.Tell(new JobIsReady());
+				}
+			});
+
 			Receive<TestRun>(input =>
 			{
 				Console.WriteLine("New test run for {0}", input.Assembly);
 
 				var testFixtures = LoadTestFixtures(input.Assembly);
-				foreach (Job work in testFixtures)
+				foreach (var job in testFixtures)
 				{
-					_jobQueue.Enqueue(work);
+					_jobQueue.Enqueue(job);
+				}
+
+				if (_jobQueue.Count > 0)
+				{
+					foreach (var worker in _workers)
+					{
+						worker.Tell(new JobIsReady(), Self);
+					}
 				}
 			});
 
@@ -94,33 +110,25 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<JobCompleted>(completed =>
-			{
-				_runningTests.RemoveAll(job => job.Worker.Equals(completed.Worker));
-				if (_jobQueue.Count > 0)
-				{
-					Sender.Tell(new JobIsReady());
-				}
-			});
-
 			ReceiveAny(any =>
 			{
 				//readd task on failure to the queue
-				var runningTest = (RunningTest) any;
+				var runningTest = any as RunningJob;
 				if (runningTest != null)
+				{
 					_jobQueue.Enqueue(new Job(runningTest.AssemblyPath, runningTest.TestFixtureName, runningTest.ArtifactsUri));
+				}
 			});
 		}
 
 		private bool IsKnown(IActorRef worker)
 		{
-			if (!_workers.Contains(worker))return false;
-			return true;
+			return _workers.Contains(worker);
 		}
 
 		private void ReaddTaskIfAny(IActorRef worker)
 		{
-			var task = _runningTests.FirstOrDefault(job => job.Worker.Equals(worker));
+			var task = _runningJobs.FirstOrDefault(job => job.Worker.Equals(worker));
 			if (task != null)
 			{
 				Self.Tell(task, Sender);
