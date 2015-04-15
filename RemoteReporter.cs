@@ -11,10 +11,10 @@ namespace Akka.NUnit.Runtime
 	internal sealed class RemoteReporter : ITestEventListener
 	{
 		private readonly IActorRef _worker;
-		private readonly ActorSelection _manager;
+		private readonly IActorRef _manager;
 		private readonly string _agentName;
 
-		public RemoteReporter(IActorRef worker, ActorSelection manager, string agentName)
+		public RemoteReporter(IActorRef worker, IActorRef manager, string agentName)
 		{
 			if (worker == null) throw new ArgumentNullException("worker");
 			if (manager == null) throw new ArgumentNullException("manager");

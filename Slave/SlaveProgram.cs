@@ -21,7 +21,7 @@ namespace Slave
 				for (int i = 1; i <= 1; i++)
 				{
 					var worker = system.ActorOf<Worker>("worker" + i);
-					worker.Tell(new SetManager(master));
+					worker.Tell(new SetMaster(master));
 				}
 
 				Console.WriteLine("Press any key to exit");
