@@ -23,12 +23,12 @@ namespace Akka.NUnit.Runtime
 		{
 			Receive<RegisterWorker>(newWorker =>
 			{
-				Console.WriteLine("Created new worker {0}", newWorker.Worker.Path.Name);
-				Context.Watch(newWorker.Worker);
-				_workers.Add(newWorker.Worker);
+				Console.WriteLine("Created new worker {0}", Sender.Path.Name);
+				Context.Watch(Sender);
+				_workers.Add(Sender);
 				if (_jobQueue.Count > 0)
 				{
-					newWorker.Worker.Tell(new JobIsReady());
+					Sender.Tell(new JobIsReady());
 				}
 			});
 
@@ -71,15 +71,15 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<TestReport>(report =>
+			Receive<TestEvent>(e =>
 			{
 				// TODO integrate teamcity reporter
-				var status = report.Failed ? "FAILED" : "PASSED";
-				Console.WriteLine("Test {0} is {1} on agent '{2}'.", report.Test, status, report.Agent);
-				if (!string.IsNullOrEmpty(report.Output))
+				Console.WriteLine("{0} {1} is {2} by '{3}'.", e.Kind, e.FullName, e.Result, e.Worker);
+
+				if (!string.IsNullOrEmpty(e.Output))
 				{
 					Console.WriteLine("Output:");
-					Console.WriteLine(report.Output);
+					Console.WriteLine(e.Output);
 				}
 			});
 
@@ -94,10 +94,13 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<SuiteReport>(report =>
+			Receive<JobCompleted>(completed =>
 			{
-				//Remove passed test from runningTests list;
-				_runningTests.RemoveAll(job => job.Worker.Equals(report.Worker));
+				_runningTests.RemoveAll(job => job.Worker.Equals(completed.Worker));
+				if (_jobQueue.Count > 0)
+				{
+					Sender.Tell(new JobIsReady());
+				}
 			});
 
 			ReceiveAny(any =>
@@ -143,8 +146,8 @@ namespace Akka.NUnit.Runtime
 					var tests = XElement.Load(new XmlNodeReader(runner.Explore(filter)));
 
 					return from d in tests.Descendants()
-						let type = d.GetAttribute("type")
-						let name = d.GetAttribute("fullname")
+						let type = d.GetAttribute("type", (string) null)
+						let name = d.GetAttribute("fullname", (string) null)
 						where name != null && type != null && type == "TestFixture"
 						select new Job(assemblyPath, name, artifactsUrl);
 				}

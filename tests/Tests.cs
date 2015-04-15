@@ -69,30 +69,30 @@ namespace Tests
 		}
 	}
 
-	[TestFixture(1)]
-	[TestFixture(2)]
-	public class Fixture3
-	{
-		private readonly int _version;
+	//[TestFixture(1)]
+	//[TestFixture(2)]
+	//public class Fixture3
+	//{
+	//	private readonly int _version;
 
-		public Fixture3(int version)
-		{
-			_version = version;
-		}
+	//	public Fixture3(int version)
+	//	{
+	//		_version = version;
+	//	}
 
-		[Test]
-		public void Test()
-		{
-			Thread.Sleep(100);
-			Console.WriteLine("Fixture3({0}).Test", _version);
-		}
+	//	[Test]
+	//	public void Test()
+	//	{
+	//		Thread.Sleep(100);
+	//		Console.WriteLine("Fixture3({0}).Test", _version);
+	//	}
 
-		[TestCase("a")]
-		[TestCase("b")]
-		public void TestCase(string input)
-		{
-			Thread.Sleep(100);
-			Console.WriteLine("Fixture3({0}).TestCase({1})", _version, input);
-		}
-	}
+	//	[TestCase("a")]
+	//	[TestCase("b")]
+	//	public void TestCase(string input)
+	//	{
+	//		Thread.Sleep(100);
+	//		Console.WriteLine("Fixture3({0}).TestCase({1})", _version, input);
+	//	}
+	//}
 }

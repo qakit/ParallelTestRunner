@@ -3,6 +3,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
 using Akka.NUnit.Runtime.Messages;
+using Akka.NUnit.Runtime.Reporters;
 using NUnit.Engine;
 
 namespace Akka.NUnit.Runtime
@@ -26,7 +27,7 @@ namespace Akka.NUnit.Runtime
 				Console.WriteLine("Sender: {0}", Sender.Path);
 				Console.WriteLine("Setting new master {0} for worker", input.Master.PathString);
 				_master = input.Master;
-				_master.Tell(new RegisterWorker(Self));
+				_master.Tell(new RegisterWorker(), Self);
 			});
 
 			Receive<JobIsReady>(ready =>
@@ -54,7 +55,7 @@ namespace Akka.NUnit.Runtime
 
 					var filter = builder.GetFilter();
 
-					var listener = new RemoteReporter(Self, Sender, Self.Path.Name);
+					var listener = new EventListener(Self.Path.Name, e => Sender.Tell(e, Self));
 
 					using (var runner = engine.GetRunner(package))
 					{
@@ -62,9 +63,8 @@ namespace Akka.NUnit.Runtime
 						Console.WriteLine(results.ToString());
 					}
 				}
-
-				Sender.Tell(new SuiteReport(Self, job.TestFixture, 0, 0));
-
+				
+				_master.Tell(new JobCompleted(Self));
 				_master.Tell(new RequestJob());
 			});
 
