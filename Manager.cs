@@ -21,17 +21,14 @@ namespace Akka.NUnit.Runtime
 
 		public Manager()
 		{
-			Receive<RegisterWorker>(_ =>
+			Receive<RegisterWorker>(newWorker =>
 			{
-				Console.WriteLine("Created new worker {0}", Sender.Path.Name);
-
-				Context.Watch(Sender);
-
-				_workers.Add(Sender);
-
+				Console.WriteLine("Created new worker {0}", newWorker.Worker.Path.Name);
+				Context.Watch(newWorker.Worker);
+				_workers.Add(newWorker.Worker);
 				if (_jobQueue.Count > 0)
 				{
-					Sender.Tell(new JobIsReady());
+					newWorker.Worker.Tell(new JobIsReady());
 				}
 			});
 
@@ -48,7 +45,7 @@ namespace Akka.NUnit.Runtime
 				{
 					var runnintTest = new RunningTest
 					{
-						Name = job.TestFixture,
+						TestFixtureName = job.TestFixture,
 						ArtifactsUri = job.ArtifactsUrl,
 						AssemblyPath = job.Assembly,
 						Worker = worker
@@ -63,14 +60,6 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<JobCompleted>(_ =>
-			{
-				if (_jobQueue.Count > 0)
-				{
-					Sender.Tell(new JobIsReady());
-				}
-			});
-
 			Receive<TestRun>(input =>
 			{
 				Console.WriteLine("New test run for {0}", input.Assembly);
@@ -82,17 +71,57 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<TestEvent>(e =>
+			Receive<TestReport>(report =>
 			{
 				// TODO integrate teamcity reporter
-				Console.WriteLine("{0} {1} is {2} by '{3}'.", e.Kind, e.FullName, e.Result, e.Worker);
-
-				if (!string.IsNullOrEmpty(e.Output))
+				var status = report.Failed ? "FAILED" : "PASSED";
+				Console.WriteLine("Test {0} is {1} on agent '{2}'.", report.Test, status, report.Agent);
+				if (!string.IsNullOrEmpty(report.Output))
 				{
 					Console.WriteLine("Output:");
-					Console.WriteLine(e.Output);
+					Console.WriteLine(report.Output);
 				}
 			});
+
+			Receive<Terminated>(t =>
+			{
+				var worker = t.ActorRef;
+				if (IsKnown(worker))
+				{
+					Console.WriteLine("Killing worker {0}", worker.Path.Name);
+					ReaddTaskIfAny(worker);
+					_workers.Remove(worker);
+				}
+			});
+
+			Receive<SuiteReport>(report =>
+			{
+				//Remove passed test from runningTests list;
+				_runningTests.RemoveAll(job => job.Worker.Equals(report.Worker));
+			});
+
+			ReceiveAny(any =>
+			{
+				//readd task on failure to the queue
+				var runningTest = (RunningTest) any;
+				if (runningTest != null)
+					_jobQueue.Enqueue(new Job(runningTest.AssemblyPath, runningTest.TestFixtureName, runningTest.ArtifactsUri));
+			});
+		}
+
+		private bool IsKnown(IActorRef worker)
+		{
+			if (!_workers.Contains(worker))return false;
+			return true;
+		}
+
+		private void ReaddTaskIfAny(IActorRef worker)
+		{
+			var task = _runningTests.FirstOrDefault(job => job.Worker.Equals(worker));
+			if (task != null)
+			{
+				Self.Tell(task, Sender);
+			}
 		}
 
 		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)
@@ -114,8 +143,8 @@ namespace Akka.NUnit.Runtime
 					var tests = XElement.Load(new XmlNodeReader(runner.Explore(filter)));
 
 					return from d in tests.Descendants()
-						let type = d.GetAttribute("type", (string) null)
-						let name = d.GetAttribute("fullname", (string) null)
+						let type = d.GetAttribute("type")
+						let name = d.GetAttribute("fullname")
 						where name != null && type != null && type == "TestFixture"
 						select new Job(assemblyPath, name, artifactsUrl);
 				}

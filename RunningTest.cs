@@ -7,6 +7,6 @@ namespace Akka.NUnit.Runtime
 		public string AssemblyPath;
 		public string ArtifactsUri;
 		public IActorRef Worker;
-		public string Name;
+		public string TestFixtureName;
 	}
 }

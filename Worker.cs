@@ -3,7 +3,6 @@ using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
 using Akka.NUnit.Runtime.Messages;
-using Akka.NUnit.Runtime.Reporters;
 using NUnit.Engine;
 
 namespace Akka.NUnit.Runtime
@@ -27,10 +26,10 @@ namespace Akka.NUnit.Runtime
 				Console.WriteLine("Sender: {0}", Sender.Path);
 				Console.WriteLine("Setting new master {0} for worker", input.Master.PathString);
 				_master = input.Master;
-				_master.Tell(new RegisterWorker(), Self);
+				_master.Tell(new RegisterWorker(Self));
 			});
 
-			Receive<JobIsReady>(_ =>
+			Receive<JobIsReady>(ready =>
 			{
 				Console.WriteLine("Worker requests for a work");
 				_master.Tell(new RequestJob());
@@ -49,22 +48,24 @@ namespace Akka.NUnit.Runtime
 
 					var builder = new TestFilterBuilder
 					{
-						Tests = {job.TestFixture}
+						// TODO deal with fixture filter, it seems we need to send all tests from test fixture
+						Tests = { job.TestFixture }
 					};
 
 					var filter = builder.GetFilter();
 
-					var listener = new EventListener(Self.Path.Name, e => Sender.Tell(e, Self));
+					var listener = new RemoteReporter(Self, Sender, Self.Path.Name);
 
 					using (var runner = engine.GetRunner(package))
 					{
 						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
-						// Console.WriteLine(results.ToString());
+						Console.WriteLine(results.ToString());
 					}
 				}
 
-				// TODO pass id of job
-				_master.Tell(new JobCompleted());
+				Sender.Tell(new SuiteReport(Self, job.TestFixture, 0, 0));
+
+				_master.Tell(new RequestJob());
 			});
 
 			Receive<NoJob>(_ => { });
