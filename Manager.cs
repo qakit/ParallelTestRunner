@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
@@ -11,21 +14,50 @@ namespace Akka.NUnit.Runtime
 {
 	public class Manager : ReceiveActor
 	{
+		private ConcurrentQueue<TestRun> _jobs = new ConcurrentQueue<TestRun>();
+
 		public Manager()
 		{
-			var workers = Enumerable.Range(1, 4).Select(i => "user/worker" + i).ToArray();
+			var workers = new List<string>();
 
-			// use router with round robin strategy
-			var router = Context.ActorOf(Props.Empty.WithRouter(
-				new RoundRobinGroup(workers))
-				);
+			Func<IActorRef> createRouter = () =>
+			{
+				// use router with round robin strategy
+				return Context.ActorOf(Props.Empty.WithRouter(
+					new RoundRobinGroup(workers.ToArray()))
+					);
+			};
+
+			var router = createRouter();
+
+			Receive<RegisterWorker>(input =>
+			{
+				Console.WriteLine("New worker {0}", input.Worker.PathString);
+
+				workers.Add(input.Worker.PathString);
+				router = createRouter();
+
+				if (_jobs.Count > 0)
+				{
+					var assembly = Path.Combine(Environment.CurrentDirectory, "tests.dll");
+					Console.WriteLine("Please run {0}", assembly);
+					Self.Tell(new TestRun(assembly));
+				}
+
+//				while (_jobs.Count > 0)
+//				{
+//					TestRun job;
+//					if (!_jobs.TryDequeue(out job)) break;
+//					Run(job, router);
+//				}
+			});
 
 			Receive<TestRun>(input =>
 			{
-				foreach (var job in LoadTestFixtures(input.Assembly))
-				{
-					router.Tell(job, Self);
-				}
+				if (workers.Count == 0)
+					_jobs.Enqueue(input);
+				else
+					Run(input, router);
 			});
 
 			Receive<TestReport>(report =>
@@ -46,6 +78,15 @@ namespace Akka.NUnit.Runtime
 				Console.WriteLine("Suite {0} completed on '{1}'. Failed {2}. Passed {3}.",
 					report.Suite, report.Agent, report.Failed, report.Passed);
 			});
+		}
+
+		private void Run(TestRun input, IActorRef router)
+		{
+			var jobs = LoadTestFixtures(input.Assembly);
+			foreach (var job in jobs)
+			{
+				router.Tell(job, Self);
+			}
 		}
 
 		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)

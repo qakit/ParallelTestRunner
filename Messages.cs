@@ -1,4 +1,6 @@
-﻿namespace Akka.NUnit.Runtime
+﻿using Akka.Actor;
+
+namespace Akka.NUnit.Runtime
 {
 	public class TestRun
 	{
@@ -8,6 +10,26 @@
 		}
 
 		public string Assembly { get; private set; }
+	}
+
+	public class SetManager
+	{
+		public ActorSelection Manager { get; set; }
+
+		public SetManager(ActorSelection manager)
+		{
+			Manager = manager;
+		}
+	}
+
+	public class RegisterWorker
+	{
+		public ActorSelection Worker { get; set; }
+
+		public RegisterWorker(ActorSelection worker)
+		{
+			Worker = worker;
+		}
 	}
 
 	public class TestReport
