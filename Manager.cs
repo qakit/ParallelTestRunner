@@ -1,63 +1,74 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
-using Akka.Routing;
+using Akka.NUnit.Runtime.Messages;
 using NUnit.Engine;
+using TestRun = Akka.NUnit.Runtime.Messages.TestRun;
 
 namespace Akka.NUnit.Runtime
 {
-	public class Manager : ReceiveActor
+	public sealed class Manager : ReceiveActor
 	{
-		private ConcurrentQueue<TestRun> _jobs = new ConcurrentQueue<TestRun>();
+		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
+		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
+
+		// TODO consider to remove, is it needed?
+		private readonly List<RunningTest> _runningTests = new List<RunningTest>(); 
 
 		public Manager()
 		{
-			var workers = new List<string>();
-
-			Func<IActorRef> createRouter = () =>
+			Receive<RegisterWorker>(newWorker =>
 			{
-				// use router with round robin strategy
-				return Context.ActorOf(Props.Empty.WithRouter(
-					new RoundRobinGroup(workers.ToArray()))
-					);
-			};
-
-			var router = createRouter();
-
-			Receive<RegisterWorker>(input =>
-			{
-				Console.WriteLine("New worker {0}", input.Worker.PathString);
-
-				workers.Add(input.Worker.PathString);
-				router = createRouter();
-
-				if (_jobs.Count > 0)
+				Console.WriteLine("Created new worker {0}", newWorker.Worker.Path.Name);
+				Context.Watch(newWorker.Worker);
+				_workers.Add(newWorker.Worker);
+				if (_jobQueue.Count > 0)
 				{
-					var assembly = Path.Combine(Environment.CurrentDirectory, "tests.dll");
-					Console.WriteLine("Please run {0}", assembly);
-					Self.Tell(new TestRun(assembly));
+					newWorker.Worker.Tell(new JobIsReady());
 				}
+			});
 
-//				while (_jobs.Count > 0)
-//				{
-//					TestRun job;
-//					if (!_jobs.TryDequeue(out job)) break;
-//					Run(job, router);
-//				}
+			Receive<RequestJob>(request =>
+			{
+				var worker = Sender;
+				Console.WriteLine("Worker {0} requests for a work", worker.Path.Name);
+
+				//TODO handle no work to be done situation;
+				//TODO load tests somehwere else not here
+
+				Job job;
+				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out job))
+				{
+					var runnintTest = new RunningTest
+					{
+						Name = job.TestFixture,
+						ArtifactsUri = job.ArtifactsUrl,
+						AssemblyPath = job.Assembly,
+						Worker = worker
+					};
+
+					_runningTests.Add(runnintTest);
+					worker.Tell(job, Self);
+				}
+				else
+				{
+					worker.Tell(new NoJob());
+				}
 			});
 
 			Receive<TestRun>(input =>
 			{
-				if (workers.Count == 0)
-					_jobs.Enqueue(input);
-				else
-					Run(input, router);
+				Console.WriteLine("New test run for {0}", input.Assembly);
+
+				var testFixtures = LoadTestFixtures(input.Assembly);
+				foreach (Job work in testFixtures)
+				{
+					_jobQueue.Enqueue(work);
+				}
 			});
 
 			Receive<TestReport>(report =>
@@ -74,19 +85,7 @@ namespace Akka.NUnit.Runtime
 
 			Receive<SuiteReport>(report =>
 			{
-				// TODO teamcity reporter
-				Console.WriteLine("Suite {0} completed on '{1}'. Failed {2}. Passed {3}.",
-					report.Suite, report.Agent, report.Failed, report.Passed);
 			});
-		}
-
-		private void Run(TestRun input, IActorRef router)
-		{
-			var jobs = LoadTestFixtures(input.Assembly);
-			foreach (var job in jobs)
-			{
-				router.Tell(job, Self);
-			}
 		}
 
 		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)

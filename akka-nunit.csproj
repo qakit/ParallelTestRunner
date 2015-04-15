@@ -62,17 +62,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions.cs" />
-    <Compile Include="Master.cs" />
+    <Compile Include="Manager.cs" />
     <Compile Include="Messages\Job.cs" />
-    <Compile Include="Messages\NoWorkToBeDone.cs" />
+    <Compile Include="Messages\NoJob.cs" />
     <Compile Include="Messages\RegisterWorker.cs" />
-    <Compile Include="Messages\RequestWork.cs" />
+    <Compile Include="Messages\RequestJob.cs" />
     <Compile Include="Messages\SetMaster.cs" />
     <Compile Include="Messages\SuiteReport.cs" />
     <Compile Include="Messages\TestReport.cs" />
     <Compile Include="Messages\TestRun.cs" />
-    <Compile Include="Messages\WorkIsReady.cs" />
-    <Compile Include="Messages\WorkToBeDone.cs" />
+    <Compile Include="Messages\JobIsReady.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RunningTest.cs" />
     <Compile Include="TeamCityReporter.cs" />

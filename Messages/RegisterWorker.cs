@@ -1,14 +1,14 @@
 using Akka.Actor;
 
-namespace Akka.NUnit.Runtime
+namespace Akka.NUnit.Runtime.Messages
 {
-	public class RegisterWorker
+	public sealed class RegisterWorker
 	{
-		public IActorRef Worker { get; set; }
-
 		public RegisterWorker(IActorRef worker)
 		{
 			Worker = worker;
 		}
+
+		public IActorRef Worker { get; private set; }
 	}
 }

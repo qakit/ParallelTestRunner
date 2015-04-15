@@ -1,4 +1,4 @@
 ﻿namespace Akka.NUnit.Runtime.Messages
 {
-	public class RequestWork{}
+	public class RequestJob{}
 }

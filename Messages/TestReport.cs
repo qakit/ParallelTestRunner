@@ -1,6 +1,6 @@
-namespace Akka.NUnit.Runtime
+namespace Akka.NUnit.Runtime.Messages
 {
-	public class TestReport
+	public sealed class TestReport
 	{
 		public TestReport(string agent, string test, bool failed, string output)
 		{

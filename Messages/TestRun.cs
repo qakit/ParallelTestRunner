@@ -1,6 +1,6 @@
-namespace Akka.NUnit.Runtime
+namespace Akka.NUnit.Runtime.Messages
 {
-	public class TestRun
+	public sealed class TestRun
 	{
 		public TestRun(string assembly)
 		{

@@ -1,6 +1,8 @@
-namespace Akka.NUnit.Runtime
+namespace Akka.NUnit.Runtime.Messages
 {
-	public class SuiteReport
+	// TODO combine with test report
+
+	public sealed class SuiteReport
 	{
 		public SuiteReport(string agent, string suite, int passed, int failed)
 		{

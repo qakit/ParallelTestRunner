@@ -1,14 +1,14 @@
 using Akka.Actor;
 
-namespace Akka.NUnit.Runtime
+namespace Akka.NUnit.Runtime.Messages
 {
-	public class SetMaster
+	public sealed class SetMaster
 	{
-		public ActorSelection Master { get; set; }
-
 		public SetMaster(ActorSelection master)
 		{
 			Master = master;
 		}
+
+		public ActorSelection Master { get; private set; }
 	}
 }

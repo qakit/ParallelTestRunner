@@ -2,15 +2,15 @@
 {
 	public class Job
 	{
-		public Job(string assembly, string fixture, string artifactsUrl)
+		public Job(string assembly, string testFixture, string artifactsUrl)
 		{
 			Assembly = assembly;
-			Fixture = fixture;
+			TestFixture = testFixture;
 			ArtifactsUrl = artifactsUrl;
 		}
 
 		public string Assembly { get; private set; }
-		public string Fixture { get; private set; }
+		public string TestFixture { get; private set; }
 		public string ArtifactsUrl { get; private set; }
 	}
 }

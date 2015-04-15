@@ -1,6 +1,7 @@
 using System;
 using System.Xml.Linq;
 using Akka.Actor;
+using Akka.NUnit.Runtime.Messages;
 using NUnit.Engine;
 
 namespace Akka.NUnit.Runtime

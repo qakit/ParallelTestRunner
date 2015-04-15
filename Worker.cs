@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
@@ -22,39 +21,40 @@ namespace Akka.NUnit.Runtime
 
 		private void Idle()
 		{
-			Receive<SetMaster>(setMaster =>
+			Receive<SetMaster>(input =>
 			{
-				Console.WriteLine("Setting new master for worker");
-				_master = setMaster.Master;
+				Console.WriteLine("Sender: {0}", Sender.Path);
+				Console.WriteLine("Setting new master {0} for worker", input.Master.PathString);
+				_master = input.Master;
 				_master.Tell(new RegisterWorker(Self));
 			});
 
-			Receive<WorkIsReady>(ready =>
+			Receive<JobIsReady>(ready =>
 			{
 				Console.WriteLine("Worker requests for a work");
-				_master.Tell(new RequestWork());
+				_master.Tell(new RequestJob());
 			});
 
-			Receive<WorkToBeDone>(work =>
+			Receive<Job>(job =>
 			{
-				Console.WriteLine("Downloading artifacts {0}", work.Job.ArtifactsUrl);
-				Console.WriteLine("Running test fixture {0} from {1}", work.Job.Fixture, work.Job.Assembly);
+				Console.WriteLine("Downloading artifacts {0}", job.ArtifactsUrl);
+				Console.WriteLine("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
 
 				using (var engine = TestEngineActivator.CreateInstance())
 				{
-					var package = new TestPackage(new[] { work.Job.Assembly }); // TODO now assuming assembly path
+					var package = new TestPackage(new[] { job.Assembly }); // TODO now assuming assembly path
 					package.Settings["ProcessModel"] = "Single";
 					package.Settings["DomainUsage"] = "None";
 
 					var builder = new TestFilterBuilder
 					{
 						// TODO deal with fixture filter, it seems we need to send all tests from test fixture
-						Tests = { work.Job.Fixture }
+						Tests = { job.TestFixture }
 					};
 
 					var filter = builder.GetFilter();
 
-					var listener = new RemoteReporter(Self, Sender, Sender.Path.Name);
+					var listener = new RemoteReporter(Self, Sender, Self.Path.Name);
 
 					using (var runner = engine.GetRunner(package))
 					{
@@ -62,57 +62,13 @@ namespace Akka.NUnit.Runtime
 						 Console.WriteLine(results.ToString());
 					}
 				}
+
+				Sender.Tell(new SuiteReport(Self.Path.Name, job.TestFixture, 0, 0));
+
+				_master.Tell(new RequestJob());
 			});
 
-			Receive<NoWorkToBeDone>(_ => { });
+			Receive<NoJob>(_ => { });
 		}
-
-//			ActorSelection manager = null;
-//
-//			Receive<SetMaster>(set =>
-//			{
-//				Console.WriteLine("Connecting to master");
-//				manager = set.Manager;
-//				manager.Tell(new RegisterWorker(Context.ActorSelection(Self.Path)));
-//			});
-//
-//			Receive<Job>(async input =>
-//			{
-//				// TODO download artifacts and save to temp folder
-//				Console.WriteLine("Downloading artifacts {0}", input.ArtifactsUrl);
-//
-//				Console.WriteLine("Running test fixture {0} from {1}", input.Fixture, input.Assembly);
-//
-//				var agentName = Self.Path.Name; // ToStringWithAddress();
-//
-//				if (manager == null)
-//				{
-//					// TODO fail
-//					manager = new ActorSelection(Context.ActorOf<Manager>(), "manager");
-//				}
-//
-//				using (var engine = TestEngineActivator.CreateInstance())
-//				{
-//					var package = new TestPackage(new[] {input.Assembly}); // TODO now assuming assembly path
-//					package.Settings["ProcessModel"] = "Single";
-//					package.Settings["DomainUsage"] = "None";
-//
-//					var builder = new TestFilterBuilder
-//					{
-//						// TODO deal with fixture filter, it seems we need to send all tests from test fixture
-//						Tests = {input.Fixture}
-//					};
-//					
-//					var filter = builder.GetFilter();
-//
-//					var listener = new RemoteReporter(Self, manager, agentName);
-//
-//					using (var runner = engine.GetRunner(package))
-//					{
-//						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
-//						// Console.WriteLine(results.ToString());
-//					}
-//				}
-//			});
 	}
 }
