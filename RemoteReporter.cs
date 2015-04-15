@@ -62,7 +62,7 @@ namespace Akka.NUnit.Runtime
 		private void TestSuiteFinished(XElement result)
 		{
 			var testName = result.GetAttribute("fullname");
-			_manager.Tell(new SuiteReport(_agentName, testName, 0, 0), _worker);
+			_manager.Tell(new SuiteReport(_worker, testName, 0, 0), _worker);
 		}
 	}
 }

@@ -59,11 +59,11 @@ namespace Akka.NUnit.Runtime
 					using (var runner = engine.GetRunner(package))
 					{
 						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
-						 Console.WriteLine(results.ToString());
+						Console.WriteLine(results.ToString());
 					}
 				}
 
-				Sender.Tell(new SuiteReport(Self.Path.Name, job.TestFixture, 0, 0));
+				Sender.Tell(new SuiteReport(Self, job.TestFixture, 0, 0));
 
 				_master.Tell(new RequestJob());
 			});

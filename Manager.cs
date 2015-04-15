@@ -45,7 +45,7 @@ namespace Akka.NUnit.Runtime
 				{
 					var runnintTest = new RunningTest
 					{
-						Name = job.TestFixture,
+						TestFixtureName = job.TestFixture,
 						ArtifactsUri = job.ArtifactsUrl,
 						AssemblyPath = job.Assembly,
 						Worker = worker
@@ -83,9 +83,45 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
+			Receive<Terminated>(t =>
+			{
+				var worker = t.ActorRef;
+				if (IsKnown(worker))
+				{
+					Console.WriteLine("Killing worker {0}", worker.Path.Name);
+					ReaddTaskIfAny(worker);
+					_workers.Remove(worker);
+				}
+			});
+
 			Receive<SuiteReport>(report =>
 			{
+				//Remove passed test from runningTests list;
+				_runningTests.RemoveAll(job => job.Worker.Equals(report.Worker));
 			});
+
+			ReceiveAny(any =>
+			{
+				//readd task on failure to the queue
+				var runningTest = (RunningTest) any;
+				if (runningTest != null)
+					_jobQueue.Enqueue(new Job(runningTest.AssemblyPath, runningTest.TestFixtureName, runningTest.ArtifactsUri));
+			});
+		}
+
+		private bool IsKnown(IActorRef worker)
+		{
+			if (!_workers.Contains(worker))return false;
+			return true;
+		}
+
+		private void ReaddTaskIfAny(IActorRef worker)
+		{
+			var task = _runningTests.FirstOrDefault(job => job.Worker.Equals(worker));
+			if (task != null)
+			{
+				Self.Tell(task, Sender);
+			}
 		}
 
 		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)

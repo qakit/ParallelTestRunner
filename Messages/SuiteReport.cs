@@ -1,12 +1,14 @@
+using Akka.Actor;
+
 namespace Akka.NUnit.Runtime.Messages
 {
 	// TODO combine with test report
 
 	public sealed class SuiteReport
 	{
-		public SuiteReport(string agent, string suite, int passed, int failed)
+		public SuiteReport(IActorRef worker, string suite, int passed, int failed)
 		{
-			Agent = agent;
+			Worker = worker;
 			Suite = suite;
 			Passed = passed;
 			Failed = failed;
@@ -15,7 +17,7 @@ namespace Akka.NUnit.Runtime.Messages
 		/// <summary>
 		/// Name of worker who run the test.
 		/// </summary>
-		public string Agent { get; private set; }
+		public IActorRef Worker { get; private set; }
 		public string Suite { get; private set; }
 		public int Passed { get; private set; }
 		public int Failed { get; private set; }
