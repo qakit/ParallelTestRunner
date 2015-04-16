@@ -17,11 +17,18 @@ namespace Akka.NUnit
 		// TODO allow specify working dir
 		private static readonly string WorkingDir = Environment.CurrentDirectory;
 
+		private static HoconRoot Hocon { get; set; }
+		private static ActorSystem Scene { get; set; }
+		private static IActorRef Manager { get; set; }
+
+		// number of local workers
+		private static int NumWorkers { get; set; }
+
 		static void Main(string[] args)
 		{
 			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
-			var numWorkers = opts.Get("workers", 0); // number of local workers
+			NumWorkers = opts.Get("workers", 0);
 			var port = opts.Get("port", 8091);
 			var include = opts.Get("include", "").Split(',', ';');
 			var exclude = opts.Get("exclude", "").Split(',', ';');
@@ -36,31 +43,53 @@ namespace Akka.NUnit
 			hocon.Set("akka.remote.helios.tcp.port", port);
 			hocon.Set("akka.remote.helios.tcp.hostname", ip);
 			hocon.Set("akka.remote.helios.tcp.public-hostname", ip);
+			Hocon = hocon;
 
-			var hoconString = hocon.Value.ToString();
-			var config = ConfigurationFactory.ParseString(hoconString);
-			
-			using (var system = ActorSystem.Create("TestSystem", config))
+			Start();
+
+			// now push assemblies to be tested
+			foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
 			{
-				var manager = system.ActorOf<Manager>("manager");
-
-				// create local workers
-				for (int i = 1; i <= numWorkers; i++)
-				{
-					var worker = system.ActorOf<Worker>(string.Format("lw{0}-{1}", pid, i));
-					worker.Tell(new SetMaster(system.ActorSelection(manager.Path)));
-				}
-
-				Console.WriteLine("master is up {0}", manager.Path.ToStringWithAddress());
-
-				// now push assemblies to be tested
-				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
-				{
-					manager.Tell(new TestRun(path, include, exclude));
-				}
-
-				CommandLoop(manager);
+				Manager.Tell(new TestRun(path, include, exclude));
 			}
+
+			Repl.Run(Exec);
+
+			Stop();
+		}
+
+		private static void Start()
+		{
+			if (Scene != null) return;
+
+			var hoconString = Hocon.Value.ToString();
+			var config = ConfigurationFactory.ParseString(hoconString);
+
+			Scene = ActorSystem.Create("TestSystem", config);
+			Manager = Scene.ActorOf<Manager>("manager");
+
+			var pid = Process.GetCurrentProcess().Id;
+
+			// create local workers
+			for (int i = 1; i <= NumWorkers; i++)
+			{
+				var worker = Scene.ActorOf<Worker>(string.Format("lw{0}-{1}", pid, i));
+				worker.Tell(new SetMaster(Scene.ActorSelection(Manager.Path)));
+			}
+
+			Console.WriteLine("master-{0}@{1} is online", pid, Manager.Path.ToStringWithAddress());
+		}
+
+		private static void Stop()
+		{
+			if (Scene == null) return;
+
+			var pid = Process.GetCurrentProcess().Id;
+			Console.WriteLine("master-{0}@{1} is offline", pid, Manager.Path.ToStringWithAddress());
+
+			Scene.Shutdown();
+			Scene.Dispose();
+			Scene = null;
 		}
 
 		private static string GetIpAddress()

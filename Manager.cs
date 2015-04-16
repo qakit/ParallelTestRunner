@@ -111,14 +111,35 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<Terminated>(t =>
+			Receive<Bye>(msg =>
 			{
-				var worker = t.ActorRef;
-				if (IsKnown(worker))
+				var worker = Sender;
+				if (_workers.Remove(worker))
 				{
 					Log.Info("Killing worker {0}", worker.Path.Name);
 					ReaddTaskIfAny(worker);
-					_workers.Remove(worker);
+				}
+			});
+
+			Receive<Terminated>(t =>
+			{
+				if (t.ActorRef == Self)
+				{
+					Console.WriteLine("master is shutdown");
+
+					foreach (var worker in _workers)
+					{
+						worker.Tell(new Bye("night"));
+					}
+				}
+				else
+				{
+					var worker = t.ActorRef;
+					if (_workers.Remove(worker))
+					{
+						Log.Info("Killing worker {0}", worker.Path.Name);
+						ReaddTaskIfAny(worker);
+					}
 				}
 			});
 
@@ -131,11 +152,6 @@ namespace Akka.NUnit.Runtime
 					_jobQueue.Enqueue(runningJob.Job);
 				}
 			});
-		}
-
-		private bool IsKnown(IActorRef worker)
-		{
-			return _workers.Contains(worker);
 		}
 
 		private void ReaddTaskIfAny(IActorRef worker)

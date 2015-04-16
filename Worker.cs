@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
@@ -14,6 +15,7 @@ namespace Akka.NUnit.Runtime
 	public class Worker : ReceiveActor
 	{
 		protected ILoggingAdapter Log = Context.GetLogger();
+		private readonly List<ActorSelection> _masters = new List<ActorSelection>();
 
 		public Worker()
 		{
@@ -26,6 +28,7 @@ namespace Akka.NUnit.Runtime
 			{
 				Log.Debug("Sender: {0}", Sender.Path);
 				Log.Info("Setting new master {0} for worker {1}", msg.Master.PathString, Self.Path.Name);
+				_masters.Add(msg.Master);
 				msg.Master.Tell(new RegisterWorker(), Self);
 			});
 
@@ -67,6 +70,24 @@ namespace Akka.NUnit.Runtime
 			});
 
 			Receive<NoJob>(_ => { });
+
+			Receive<Bye>(msg =>
+			{
+				// _masters.Remove(Sender);
+			});
+
+			Receive<Terminated>(t =>
+			{
+				Log.Info("Terminated {0}", t.ActorRef.Path);
+
+				if (t.ActorRef == Self)
+				{
+					foreach (var master in _masters)
+					{
+						master.Tell(new Bye("fire"), Self);
+					}
+				}
+			});
 		}
 	}
 }

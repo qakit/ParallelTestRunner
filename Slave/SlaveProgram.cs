@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
@@ -44,17 +45,20 @@ namespace Akka.NUnit
 			{
 				// TODO probing of multiple masters
 				var master = system.ActorSelection(masterUrl);
+
+				var workers = new List<IActorRef>();
 				
 				for (int i = 1; i <= numWorkers; i++)
 				{
 					var worker = system.ActorOf<Worker>(string.Format("w{0}-{1}", pid, i));
+					workers.Add(worker);
 					worker.Tell(new SetMaster(master));
 				}
 
 				Console.WriteLine("Press any key to exit...");
 				Console.ReadLine();
 
-				// TODO graceful shutdown
+				system.Shutdown();
 			}
 		}
 

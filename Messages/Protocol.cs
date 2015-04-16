@@ -1,5 +1,17 @@
 ﻿namespace Akka.NUnit.Runtime.Messages
 {
+	// COMMON MESSAGES
+
+	public sealed class Bye
+	{
+		public Bye(string reason = null)
+		{
+			Reason = reason;
+		}
+
+		public string Reason { get; private set; }
+	}
+
 	// MANAGER MESSAGES
 
 	public sealed class JobIsReady { }

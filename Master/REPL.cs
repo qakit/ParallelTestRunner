@@ -10,39 +10,46 @@ namespace Akka.NUnit
 {
 	partial class MasterProgram
 	{
-		private static void CommandLoop(IActorRef manager)
+		private static bool Exec(Repl.Command cmd)
 		{
-			Repl.Run(cmd =>
+			switch (cmd.Name.ToLowerInvariant())
 			{
-				switch (cmd.Name.ToLowerInvariant())
-				{
-					case "help":
-						Console.WriteLine("q[uit] | exit - stop master");
-						Console.WriteLine("run [--include=cat1,cat2,...] [--exclude=cat1,cat2,...] <assemblies> - new test run");
-						Console.WriteLine("sim - run simulation");
-						break;
+				case "help":
+					Console.WriteLine("q[uit] | exit - stop master");
+					Console.WriteLine("run [--include=cat1,cat2,...] [--exclude=cat1,cat2,...] <assemblies> - new test run");
+					Console.WriteLine("sim - run simulation");
+					break;
 
-					case "q":
-					case "quit":
-					case "exit":
-						return false;
+				case "q":
+				case "quit":
+				case "exit":
+					return false;
 
-					case "run":
-						var include = cmd.Options.Get("include", "").Split(',', ';');
-						var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
-						foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
-						{
-							manager.Tell(new TestRun(path, include, exclude));
-						}
-						break;
+				case "start":
+					// TODO num of local workers
+					Start();
+					break;
 
-					case "sim":
-						Simulate(manager);
-						break;
-				}
+				case "stop":
+					Stop();
+					break;
 
-				return true;
-			});
+				case "run":
+					Start();
+					var include = cmd.Options.Get("include", "").Split(',', ';');
+					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
+					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
+					{
+						Manager.Tell(new TestRun(path, include, exclude));
+					}
+					break;
+
+				case "sim":
+					Simulate(Manager);
+					break;
+			}
+
+			return true;
 		}
 
 		private static void Simulate(IActorRef manager)
