@@ -15,6 +15,18 @@ namespace Akka.NUnit.Runtime
 {
 	public class Manager : ReceiveActor
 	{
+		private class RunningJob
+		{
+			public readonly IActorRef Worker;
+			public readonly Job Job;
+
+			public RunningJob(IActorRef worker, Job job)
+			{
+				Worker = worker;
+				Job = job;
+			}
+		}
+
 		protected ILoggingAdapter Log = Context.GetLogger();
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
@@ -46,15 +58,7 @@ namespace Akka.NUnit.Runtime
 				Job job;
 				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out job))
 				{
-					var runnintTest = new RunningJob
-					{
-						TestFixtureName = job.TestFixture,
-						ArtifactsUri = job.ArtifactsUrl,
-						AssemblyPath = job.Assembly,
-						Worker = worker
-					};
-
-					_runningJobs.Add(runnintTest);
+					_runningJobs.Add(new RunningJob(worker, job));
 					worker.Tell(job, Self);
 				}
 				else
@@ -121,10 +125,10 @@ namespace Akka.NUnit.Runtime
 			ReceiveAny(any =>
 			{
 				//readd task on failure to the queue
-				var runningTest = any as RunningJob;
-				if (runningTest != null)
+				var runningJob = any as RunningJob;
+				if (runningJob != null)
 				{
-					_jobQueue.Enqueue(new Job(runningTest.AssemblyPath, runningTest.TestFixtureName, runningTest.ArtifactsUri));
+					_jobQueue.Enqueue(runningJob.Job);
 				}
 			});
 		}
