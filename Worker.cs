@@ -14,7 +14,6 @@ namespace Akka.NUnit.Runtime
 	public class Worker : ReceiveActor
 	{
 		protected ILoggingAdapter Log = Context.GetLogger();
-		private ActorSelection _master;
 
 		public Worker()
 		{
@@ -23,18 +22,17 @@ namespace Akka.NUnit.Runtime
 
 		private void Idle()
 		{
-			Receive<SetMaster>(input =>
+			Receive<SetMaster>(msg =>
 			{
 				Log.Debug("Sender: {0}", Sender.Path);
-				Log.Info("Setting new master {0} for worker {1}", input.Master.PathString, Self.Path.Name);
-				_master = input.Master;
-				_master.Tell(new RegisterWorker(), Self);
+				Log.Info("Setting new master {0} for worker {1}", msg.Master.PathString, Self.Path.Name);
+				msg.Master.Tell(new RegisterWorker(), Self);
 			});
 
-			Receive<JobIsReady>(ready =>
+			Receive<JobIsReady>(_ =>
 			{
 				Log.Debug("There are new jobs");
-				_master.Tell(new RequestJob());
+				Sender.Tell(new RequestJob());
 			});
 
 			Receive<Job>(job =>
@@ -60,10 +58,12 @@ namespace Akka.NUnit.Runtime
 					using (var runner = engine.GetRunner(package))
 					{
 						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
+						// TODO accumulate results if master is died
+						// Console.WriteLine(results);
 					}
 				}
 				
-				_master.Tell(new JobCompleted(), Self);
+				Sender.Tell(new JobCompleted(), Self);
 			});
 
 			Receive<NoJob>(_ => { });
