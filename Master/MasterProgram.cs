@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
 using Akka.Configuration.Hocon;
@@ -13,20 +12,20 @@ using Akka.NUnit.Runtime.Messages;
 
 namespace Akka.NUnit
 {
-	internal static class MasterProgram
+	internal static partial class MasterProgram
 	{
+		// TODO allow specify working dir
+		private static readonly string WorkingDir = Environment.CurrentDirectory;
+
 		static void Main(string[] args)
 		{
+			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
 			var numWorkers = opts.Get("workers", 0); // number of local workers
 			var port = opts.Get("port", 8091);
+			var include = opts.Get("include", "").Split(',', ';');
+			var exclude = opts.Get("exclude", "").Split(',', ';');
 			var input = args.Where(a => !(a.StartsWith("--") || a.StartsWith("/"))).ToArray();
-
-			// TODO remove when prototype is completed
-			if (input.Length == 0)
-			{
-				input = new[] {"tests.dll"};
-			}
 
 			var ip = GetIpAddress();
 			var pid = Process.GetCurrentProcess().Id;
@@ -54,36 +53,14 @@ namespace Akka.NUnit
 
 				Console.WriteLine("master is up {0}", manager.Path.ToStringWithAddress());
 
-				// now enqueue assemblies to be tested
-
-				var workDir = Environment.CurrentDirectory; // TODO allow specify working dir
-				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(workDir, p)))
+				// now push assemblies to be tested
+				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
 				{
-					manager.Tell(new TestRun(path));
+					manager.Tell(new TestRun(path, include, exclude));
 				}
 
-				// TODO REPL with commands, e.g. simulate command to run tests.dll N times
-				// Simulate(manager);
-
-				Console.WriteLine("Press any key to exit...");
-				Console.ReadLine();
+				CommandLoop(manager);
 			}
-		}
-
-		private static void Simulate(IActorRef manager)
-		{
-			var random = new Random();
-
-			Task.Run(async () =>
-			{
-				for (var i = 0; i < 1; i++)
-				{
-					await Task.Delay(TimeSpan.FromMilliseconds(random.Next(100, 200)));
-
-					var workDir = Environment.CurrentDirectory;
-					manager.Tell(new TestRun(Path.Combine(workDir, "tests.dll")));
-				}
-			});
 		}
 
 		private static string GetIpAddress()

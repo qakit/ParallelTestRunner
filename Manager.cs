@@ -77,11 +77,11 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<TestRun>(input =>
+			Receive<TestRun>(msg =>
 			{
-				Log.Info("New test run of assembly {0}", input.Assembly);
+				Log.Info("New test run of assembly {0}", msg.Assembly);
 
-				var testFixtures = LoadTestFixtures(input.Assembly);
+				var testFixtures = LoadTestFixtures(msg);
 				foreach (var job in testFixtures)
 				{
 					_jobQueue.Enqueue(job);
@@ -147,18 +147,19 @@ namespace Akka.NUnit.Runtime
 			}
 		}
 
-		private IEnumerable<Job> LoadTestFixtures(string assemblyPath)
+		private IEnumerable<Job> LoadTestFixtures(TestRun run)
 		{
 			// TODO zip package with testing assemblies
 			// TODO copy zip package to HTTP server dir
 
+			var assemblyPath = run.Assembly;
 			var artifactsUrl = assemblyPath; // TODO URL to http server
 
 			using (var engine = TestEngineActivator.CreateInstance())
 			{
 				var package = new TestPackage(new[] {assemblyPath});
 				package.Settings["ProcessModel"] = "Single";
-				var builder = new TestFilterBuilder();
+				var builder = new TestFilterBuilder(null, run.Include, run.Exclude);
 				var filter = builder.GetFilter();
 
 				using (var runner = engine.GetRunner(package))

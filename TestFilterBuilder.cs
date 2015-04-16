@@ -7,11 +7,11 @@ namespace Akka.NUnit.Runtime
 {
 	internal sealed class TestFilterBuilder
 	{
-		public TestFilterBuilder()
+		public TestFilterBuilder(string[] tests = null, string[] include = null, string[] exclude = null)
 		{
-			Tests = new List<string>();
-			Include = new List<string>();
-			Exclude = new List<string>();
+			Tests = new List<string>(FilterCategories(tests));
+			Include = new List<string>(FilterCategories(include));
+			Exclude = new List<string>(FilterCategories(exclude));
 		}
 
 		public IList<string> Tests { get; private set; }
@@ -30,6 +30,14 @@ namespace Akka.NUnit.Runtime
 			var xml = new XElement("filter", content).ToString();
 			
 			return new TestFilter(xml);
+		}
+
+		private static string[] FilterCategories(IEnumerable<string> input)
+		{
+			return (from s in input ?? Enumerable.Empty<string>()
+					let s2 = (s ?? "").Trim()
+					where !string.IsNullOrEmpty(s2)
+					select s2).ToArray();
 		}
 	}
 }
