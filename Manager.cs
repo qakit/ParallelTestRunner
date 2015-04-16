@@ -31,7 +31,7 @@ namespace Akka.NUnit.Runtime
 
 				if (_jobQueue.Count > 0)
 				{
-					Sender.Tell(new JobIsReady());
+					Sender.Tell(new JobIsReady(), Self);
 				}
 			});
 
@@ -59,7 +59,7 @@ namespace Akka.NUnit.Runtime
 				}
 				else
 				{
-					worker.Tell(new NoJob());
+					worker.Tell(new NoJob(), Self);
 				}
 			});
 
@@ -69,7 +69,7 @@ namespace Akka.NUnit.Runtime
 
 				if (_jobQueue.Count > 0)
 				{
-					Sender.Tell(new JobIsReady());
+					Sender.Tell(new JobIsReady(), Self);
 				}
 			});
 
