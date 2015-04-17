@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "engine", "engine.csproj", "{00C5925E-5BB6-40CD-BFB6-200DD6AA14A1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "engine", "src\engine\engine.csproj", "{00C5925E-5BB6-40CD-BFB6-200DD6AA14A1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{2967AE0B-70BD-476B-A769-3FA4053D2835}"
 	ProjectSection(SolutionItems) = preProject
@@ -9,11 +9,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{2967AE
 		.nuget\NuGet.exe = .nuget\NuGet.exe
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tests", "tests\tests.csproj", "{5E8539AB-D64C-40C8-A057-42B11FC2248B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tests", "src\tests\tests.csproj", "{5E8539AB-D64C-40C8-A057-42B11FC2248B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "slave", "Slave\slave.csproj", "{58FA5BFE-2B55-4192-938D-07B26282AB88}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "slave", "src\slave\slave.csproj", "{58FA5BFE-2B55-4192-938D-07B26282AB88}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "master", "Master\master.csproj", "{2186F99A-5561-4D79-86AE-171B8ABEC0BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "master", "src\master\master.csproj", "{2186F99A-5561-4D79-86AE-171B8ABEC0BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

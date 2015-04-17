@@ -19,7 +19,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\bin\Debug\</OutputPath>
+    <OutputPath>..\..\bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -35,22 +35,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Akka">
-      <HintPath>..\packages\Akka.1.0.0\lib\net45\Akka.dll</HintPath>
+      <HintPath>..\..\packages\Akka.1.0.0\lib\net45\Akka.dll</HintPath>
     </Reference>
     <Reference Include="Akka.Remote">
-      <HintPath>..\packages\Akka.Remote.1.0.0\lib\net45\Akka.Remote.dll</HintPath>
+      <HintPath>..\..\packages\Akka.Remote.1.0.0\lib\net45\Akka.Remote.dll</HintPath>
     </Reference>
     <Reference Include="Google.ProtocolBuffers">
-      <HintPath>..\packages\Google.ProtocolBuffers.2.4.1.555\lib\net40\Google.ProtocolBuffers.dll</HintPath>
+      <HintPath>..\..\packages\Google.ProtocolBuffers.2.4.1.555\lib\net40\Google.ProtocolBuffers.dll</HintPath>
     </Reference>
     <Reference Include="Google.ProtocolBuffers.Serialization">
-      <HintPath>..\packages\Google.ProtocolBuffers.2.4.1.555\lib\net40\Google.ProtocolBuffers.Serialization.dll</HintPath>
+      <HintPath>..\..\packages\Google.ProtocolBuffers.2.4.1.555\lib\net40\Google.ProtocolBuffers.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Helios">
-      <HintPath>..\packages\Helios.1.4.0\lib\net45\Helios.dll</HintPath>
+      <HintPath>..\..\packages\Helios.1.4.0\lib\net45\Helios.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -71,7 +71,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\engine.csproj">
+    <ProjectReference Include="..\engine\engine.csproj">
       <Project>{00c5925e-5bb6-40cd-bfb6-200dd6aa14a1}</Project>
       <Name>engine</Name>
     </ProjectReference>
