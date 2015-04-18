@@ -44,6 +44,10 @@ namespace Akka.NUnit
 					}
 					break;
 
+				case "slave":
+					SpawnSlave();
+					break;
+
 				case "sim":
 					Simulate(Manager);
 					break;

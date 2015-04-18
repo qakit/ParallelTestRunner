@@ -21,6 +21,10 @@ namespace Akka.NUnit
 		private static ActorSystem Scene { get; set; }
 		private static IActorRef Manager { get; set; }
 
+		// windows job to kill child slave processes
+		// BTW it does not work when running master from VisualStudio
+		private static JobObject Killer { get; set; }
+
 		// number of local workers
 		private static int NumWorkers { get; set; }
 
@@ -28,7 +32,7 @@ namespace Akka.NUnit
 		{
 			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
-			NumWorkers = opts.Get("workers", 0);
+			NumWorkers = opts.Get("workers", 2);
 			var port = opts.Get("port", 8091);
 			var include = opts.Get("include", "").Split(',', ';');
 			var exclude = opts.Get("exclude", "").Split(',', ';');
@@ -45,17 +49,20 @@ namespace Akka.NUnit
 			hocon.Set("akka.remote.helios.tcp.public-hostname", ip);
 			Hocon = hocon;
 
-			Start();
-
-			// now push assemblies to be tested
-			foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
+			using (Killer = new JobObject())
 			{
-				Manager.Tell(new TestRun(path, include, exclude));
+				Start();
+
+				// now push assemblies to be tested
+				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
+				{
+					Manager.Tell(new TestRun(path, include, exclude));
+				}
+
+				Shell.Run(Exec);
+
+				Stop();
 			}
-
-			Shell.Run(Exec);
-
-			Stop();
 		}
 
 		private static void Start()
@@ -70,14 +77,26 @@ namespace Akka.NUnit
 
 			var pid = Process.GetCurrentProcess().Id;
 
-			// create local workers
+			// spawn local workers
 			for (int i = 1; i <= NumWorkers; i++)
 			{
-				var worker = Scene.ActorOf<Worker>(string.Format("lw{0}-{1}", pid, i));
-				worker.Tell(new SetMaster(Scene.ActorSelection(Manager.Path)));
+				SpawnSlave();
 			}
 
 			Console.WriteLine("master-{0}@{1} is online", pid, Manager.Path.ToStringWithAddress());
+		}
+
+		private static void SpawnSlave()
+		{
+			var process = Process.Start("slave.exe");
+			Killer.AddProcess(process);
+		}
+
+		private static void CreateLocalWorker(int i)
+		{
+			var pid = Process.GetCurrentProcess().Id;
+			var worker = Scene.ActorOf<Worker>(string.Format("lw{0}-{1}", pid, i));
+			worker.Tell(new SetMaster(Scene.ActorSelection(Manager.Path)));
 		}
 
 		private static void Stop()
