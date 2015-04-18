@@ -61,7 +61,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Repl.cs" />
+    <Compile Include="Shell.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HoconExtensions.cs" />
     <Compile Include="Manager.cs" />

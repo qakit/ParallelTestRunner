@@ -53,7 +53,7 @@ namespace Akka.NUnit
 				Manager.Tell(new TestRun(path, include, exclude));
 			}
 
-			Repl.Run(Exec);
+			Shell.Run(Exec);
 
 			Stop();
 		}

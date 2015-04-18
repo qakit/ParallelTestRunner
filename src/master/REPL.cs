@@ -10,7 +10,7 @@ namespace Akka.NUnit
 {
 	partial class MasterProgram
 	{
-		private static bool Exec(Repl.Command cmd)
+		private static bool Exec(Shell.Command cmd)
 		{
 			switch (cmd.Name.ToLowerInvariant())
 			{

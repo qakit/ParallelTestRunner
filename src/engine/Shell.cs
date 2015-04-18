@@ -7,7 +7,7 @@ namespace Akka.NUnit.Runtime
 	/// <summary>
 	/// Command line "read, eval, print, loop".
 	/// </summary>
-	public static class Repl
+	public static class Shell
 	{
 		public sealed class Command
 		{
