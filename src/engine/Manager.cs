@@ -173,6 +173,8 @@ namespace Akka.NUnit.Runtime
 
 			using (var engine = TestEngineActivator.CreateInstance())
 			{
+				engine.Initialize();
+
 				var package = new TestPackage(new[] {assemblyPath});
 				package.Settings["ProcessModel"] = "Single";
 				var builder = new TestFilterBuilder(null, run.Include, run.Exclude);

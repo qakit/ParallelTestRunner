@@ -41,16 +41,16 @@
       <HintPath>..\..\packages\Akka.1.0.0\lib\net45\Akka.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Addins">
-      <HintPath>..\..\lib\Mono.Addins.dll</HintPath>
+      <HintPath>..\..\lib\nunit.engine\Mono.Addins.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="nunit.engine">
-      <HintPath>..\..\lib\nunit.engine.dll</HintPath>
+      <HintPath>..\..\lib\nunit.engine\nunit.engine.dll</HintPath>
     </Reference>
     <Reference Include="nunit.engine.api">
-      <HintPath>..\..\lib\nunit.engine.api.dll</HintPath>
+      <HintPath>..\..\lib\nunit.engine\nunit.engine.api.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

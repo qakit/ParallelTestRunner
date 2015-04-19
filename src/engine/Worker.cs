@@ -43,28 +43,7 @@ namespace Akka.NUnit.Runtime
 				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
 				Log.Info("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
 
-				using (var engine = TestEngineActivator.CreateInstance())
-				{
-					var package = new TestPackage(new[] { job.Assembly }); // TODO now assuming assembly path
-					package.Settings["ProcessModel"] = "Single";
-					package.Settings["DomainUsage"] = "None";
-
-					var builder = new TestFilterBuilder
-					{
-						Tests = { job.TestFixture }
-					};
-
-					var filter = builder.GetFilter();
-
-					var listener = new EventListener(Self.Path.Name, e => Sender.Tell(e, Self));
-
-					using (var runner = engine.GetRunner(package))
-					{
-						var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
-						// TODO accumulate results if master is died
-						// Console.WriteLine(results);
-					}
-				}
+				RunTests(job);
 				
 				Sender.Tell(new JobCompleted(), Self);
 			});
@@ -88,6 +67,34 @@ namespace Akka.NUnit.Runtime
 					}
 				}
 			});
+		}
+
+		private void RunTests(Job job)
+		{
+			using (var engine = TestEngineActivator.CreateInstance())
+			{
+				engine.Initialize();
+
+				var package = new TestPackage(new[] {job.Assembly}); // TODO now assuming assembly path
+				package.Settings["ProcessModel"] = "Single";
+				package.Settings["DomainUsage"] = "None";
+
+				var builder = new TestFilterBuilder
+				{
+					Tests = {job.TestFixture}
+				};
+
+				var filter = builder.GetFilter();
+
+				var listener = new EventListener(Self.Path.Name, e => Sender.Tell(e, Self));
+
+				using (var runner = engine.GetRunner(package))
+				{
+					var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
+					// TODO accumulate results if master is died
+					// Console.WriteLine(results);
+				}
+			}
 		}
 	}
 }

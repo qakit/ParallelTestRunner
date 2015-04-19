@@ -113,15 +113,13 @@
             represents a test framework supported by this factory.
             </summary>
         </member>
-        <member name="M:NUnit.Engine.Extensibility.IDriverFactory.GetDriver(System.AppDomain,System.String,System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
+        <member name="M:NUnit.Engine.Extensibility.IDriverFactory.GetDriver(System.AppDomain,System.Reflection.AssemblyName)">
             <summary>
-            Gets a driver for a given test assembly and framework
-            which it is already known to reference.
+            Gets a driver for a given test assembly and a framework
+            which the assembly is already known to reference.
             </summary>
             <param name="domain">The domain in which the assembly will be loaded</param>
-            <param name="frameworkAssemblyName">The name of the test framework reference</param>
-            <param name="assemblyPath">The path to the test assembly</param>
-            <param name="settings">A dictionary of settings to be used for this assembly</param>
+            <param name="frameworkReference">The AssemblyName of the test framework reference</param>
             <returns></returns>
         </member>
         <member name="T:NUnit.Engine.Extensibility.IProject">
@@ -293,7 +291,7 @@
             under the engine.
             </summary>
         </member>
-        <member name="M:NUnit.Engine.Extensibility.IFrameworkDriver.Load">
+        <member name="M:NUnit.Engine.Extensibility.IFrameworkDriver.Load(System.String,System.Collections.Generic.IDictionary{System.String,System.Object})">
             <summary>
             Loads the tests in an assembly.
             </summary>
@@ -326,6 +324,12 @@
             Cancel the ongoing test run. If no  test is running, the call is ignored.
             </summary>
             <param name="force">If true, cancel any ongoing test threads, otherwise wait for them to complete.</param>
+        </member>
+        <member name="P:NUnit.Engine.Extensibility.IFrameworkDriver.ID">
+            <summary>
+            Gets and sets the unique identifier for this driver,
+            used to ensure that test ids are unique across drivers.
+            </summary>
         </member>
         <member name="T:NUnit.Engine.ILogging">
             <summary>
@@ -701,11 +705,25 @@
             </summary>
             <param name="testFiles"></param>
         </member>
-        <member name="M:NUnit.Engine.TestPackage.Add(System.String)">
+        <member name="M:NUnit.Engine.TestPackage.AddSubPackage(NUnit.Engine.TestPackage)">
             <summary>
-            Add a test file to the package.
+            Add a subproject to the package.
             </summary>
-            <param name="testFile">The test file to be added</param>
+            <param name="subPackage">The subpackage to be added</param>
+        </member>
+        <member name="M:NUnit.Engine.TestPackage.AddSetting(System.String,System.Object)">
+            <summary>
+            Add a setting to a package and all of its subpackages.
+            </summary>
+            <param name="name">The name of the setting</param>
+            <param name="value">The value of the setting</param>
+            <remarks>
+            Once a package is created, subpackages may have been created
+            as well. If you add a setting directly to the Settings dictionary
+            of the package, the subpackages are not updated. This method is
+            used when the settings are intended to be reflected to all the
+            subpackages under the package.
+            </remarks>
         </member>
         <member name="M:NUnit.Engine.TestPackage.GetSetting``1(System.String,``0)">
             <summary>
@@ -714,6 +732,15 @@
             <param name="name">The name of the setting</param>
             <param name="defaultSetting">The default value</param>
             <returns></returns>
+        </member>
+        <member name="P:NUnit.Engine.TestPackage.ID">
+            <summary>
+            Every test package gets a unique ID used to prefix test IDs within that package.
+            </summary>
+            <remarks>
+            The generated ID is only unique for packages created within the same AppDomain.
+            For that reason, NUnit pre-creates all test packages that will be needed.
+            </remarks>
         </member>
         <member name="P:NUnit.Engine.TestPackage.Name">
             <summary>
@@ -726,9 +753,9 @@
             an assembly or a recognized project type.
             </summary>
         </member>
-        <member name="P:NUnit.Engine.TestPackage.TestFiles">
+        <member name="P:NUnit.Engine.TestPackage.SubPackages">
             <summary>
-            Gets an array of the test files contained in this package
+            Gets the list of SubPackages contained in this package
             </summary>
         </member>
         <member name="P:NUnit.Engine.TestPackage.Settings">

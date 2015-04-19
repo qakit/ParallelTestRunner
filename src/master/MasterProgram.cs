@@ -27,6 +27,9 @@ namespace Akka.NUnit
 
 		static void Main(string[] args)
 		{
+			// forcing to load addins from app dir since nunit loads addins from user AppData folder
+			Environment.SetEnvironmentVariable("MONO_ADDINS_REGISTRY", WorkingDir);
+
 			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
 			NumWorkers = opts.Get("workers", 2);
