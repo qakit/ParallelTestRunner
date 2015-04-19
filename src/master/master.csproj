@@ -68,6 +68,7 @@
   <ItemGroup>
     <Compile Include="JobObject.cs" />
     <Compile Include="MasterProgram.cs" />
+    <Compile Include="ProcessList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="REPL.cs" />
   </ItemGroup>

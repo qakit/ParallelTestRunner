@@ -64,6 +64,8 @@ namespace Akka.NUnit
 
 		public bool AddProcess(IntPtr processHandle)
 		{
+			if (_disposed) throw new ObjectDisposedException("JobObject");
+
 			var success = AssignProcessToJobObject(_handle, processHandle);
 			if (!success)
 			{

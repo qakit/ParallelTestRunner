@@ -20,10 +20,7 @@ namespace Akka.NUnit
 		private static HoconRoot Hocon { get; set; }
 		private static ActorSystem Scene { get; set; }
 		private static IActorRef Manager { get; set; }
-
-		// windows job to kill child slave processes
-		// BTW it does not work when running master from VisualStudio
-		private static JobObject Killer { get; set; }
+		private static ProcessList Slaves { get; set; }
 
 		// number of local workers
 		private static int NumWorkers { get; set; }
@@ -49,7 +46,7 @@ namespace Akka.NUnit
 			hocon.Set("akka.remote.helios.tcp.public-hostname", ip);
 			Hocon = hocon;
 
-			using (Killer = new JobObject())
+			using (Slaves = new ProcessList())
 			{
 				Start();
 
@@ -89,7 +86,7 @@ namespace Akka.NUnit
 		private static void SpawnSlave()
 		{
 			var process = Process.Start("slave.exe");
-			Killer.AddProcess(process);
+			Slaves.Add(process);
 		}
 
 		private static void CreateLocalWorker(int i)
