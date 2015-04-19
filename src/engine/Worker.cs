@@ -15,7 +15,7 @@ namespace Akka.NUnit.Runtime
 	public class Worker : ReceiveActor
 	{
 		protected ILoggingAdapter Log = Context.GetLogger();
-		private readonly List<ActorSelection> _masters = new List<ActorSelection>();
+		private readonly HashSet<IActorRef> _masters = new HashSet<IActorRef>();
 
 		public Worker()
 		{
@@ -26,10 +26,21 @@ namespace Akka.NUnit.Runtime
 		{
 			Receive<SetMaster>(msg =>
 			{
-				Log.Debug("Sender: {0}", Sender.Path);
 				Log.Info("Setting new master {0} for worker {1}", msg.Master.PathString, Self.Path.Name);
-				_masters.Add(msg.Master);
-				msg.Master.Tell(new RegisterWorker(), Self);
+				msg.Master.Tell(new Greet(), Self);
+			});
+
+			Receive<Greet>(_ =>
+			{
+				_masters.Add(Sender);
+			});
+
+			Receive<Bye>(msg =>
+			{
+				if (_masters.Remove(Sender))
+				{
+					Log.Info("Master {0} disconnected", Sender.Path);
+				}
 			});
 
 			Receive<JobIsReady>(_ =>
@@ -50,23 +61,27 @@ namespace Akka.NUnit.Runtime
 
 			Receive<NoJob>(_ => { });
 
-			Receive<Bye>(msg =>
-			{
-				// _masters.Remove(Sender);
-			});
-
 			Receive<Terminated>(t =>
 			{
 				Log.Info("Terminated {0}", t.ActorRef.Path);
 
 				if (t.ActorRef == Self)
 				{
-					foreach (var master in _masters)
-					{
-						master.Tell(new Bye("fire"), Self);
-					}
+					Unregister();
 				}
 			});
+
+			Receive<PoisonPill>(_ => Unregister());
+		}
+
+		private void Unregister()
+		{
+			Log.Info("Unregistering worker {0}", Self.Path);
+
+			foreach (var master in _masters)
+			{
+				master.Tell(new Bye("fire"), Self);
+			}
 		}
 
 		private void RunTests(Job job)

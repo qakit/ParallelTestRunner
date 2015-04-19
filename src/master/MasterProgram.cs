@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration;
 using Akka.Configuration.Hocon;
@@ -99,12 +100,20 @@ namespace Akka.NUnit
 			worker.Tell(new SetMaster(Scene.ActorSelection(Manager.Path)));
 		}
 
-		private static void Stop()
+		private static async void Stop()
 		{
 			if (Scene == null) return;
 
 			var pid = Process.GetCurrentProcess().Id;
 			Console.WriteLine("master-{0}@{1} is offline", pid, Manager.Path.ToStringWithAddress());
+
+			try
+			{
+				await Manager.GracefulStop(TimeSpan.FromSeconds(5));
+			}
+			catch (TaskCanceledException)
+			{
+			}
 
 			Scene.Shutdown();
 			Scene.Dispose();

@@ -2,6 +2,8 @@
 {
 	// COMMON MESSAGES
 
+	public sealed class Greet {}
+
 	public sealed class Bye
 	{
 		public Bye(string reason = null)
@@ -19,7 +21,6 @@
 
 	// WORKER MESSAGES
 
-	public sealed class RegisterWorker { }
 	public sealed class RequestJob { }
 	public sealed class JobCompleted {}
 }

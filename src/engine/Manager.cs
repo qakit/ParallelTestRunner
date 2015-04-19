@@ -34,12 +34,14 @@ namespace Akka.NUnit.Runtime
 
 		public Manager()
 		{
-			Receive<RegisterWorker>(_ =>
+			Receive<Greet>(_ =>
 			{
 				Log.Info("New worker {0}", Sender.Path.Name);
 
 				Context.Watch(Sender);
 				_workers.Add(Sender);
+
+				Sender.Tell(new Greet(), Self);
 
 				if (_jobQueue.Count > 0)
 				{
@@ -87,13 +89,7 @@ namespace Akka.NUnit.Runtime
 					_jobQueue.Enqueue(job);
 				}
 
-				if (_jobQueue.Count > 0)
-				{
-					foreach (var worker in _workers)
-					{
-						worker.Tell(new JobIsReady(), Self);
-					}
-				}
+				NotifyJobIsReady();
 			});
 
 			Receive<TestEvent>(e =>
@@ -114,44 +110,49 @@ namespace Akka.NUnit.Runtime
 			Receive<Bye>(msg =>
 			{
 				var worker = Sender;
-				if (_workers.Remove(worker))
-				{
-					Log.Info("Killing worker {0}", worker.Path.Name);
-					ReaddTaskIfAny(worker);
-				}
+				RemoveWorker(worker);
 			});
 
 			Receive<Terminated>(t =>
 			{
 				if (t.ActorRef == Self)
 				{
-					Console.WriteLine("master is shutdown");
-
-					foreach (var worker in _workers)
-					{
-						worker.Tell(new Bye("night"));
-					}
+					Stop();
 				}
 				else
 				{
-					var worker = t.ActorRef;
-					if (_workers.Remove(worker))
-					{
-						Log.Info("Killing worker {0}", worker.Path.Name);
-						ReaddTaskIfAny(worker);
-					}
+					RemoveWorker(t.ActorRef);
 				}
 			});
 
-			ReceiveAny(any =>
+			Receive<PoisonPill>(_ => Stop());
+		}
+
+		private void Stop()
+		{
+			Log.Info("Killing manager");
+
+			foreach (var worker in _workers)
 			{
-				//readd task on failure to the queue
-				var runningJob = any as RunningJob;
-				if (runningJob != null)
-				{
-					_jobQueue.Enqueue(runningJob.Job);
-				}
-			});
+				worker.Tell(new Bye("night"));
+			}
+		}
+
+		private void NotifyJobIsReady()
+		{
+			if (_jobQueue.Count <= 0) return;
+
+			foreach (var worker in _workers)
+			{
+				worker.Tell(new JobIsReady(), Self);
+			}
+		}
+
+		private void RemoveWorker(IActorRef worker)
+		{
+			if (!_workers.Remove(worker)) return;
+			Log.Info("Killing worker {0}", worker.Path.Name);
+			ReaddTaskIfAny(worker);
 		}
 
 		private void ReaddTaskIfAny(IActorRef worker)
@@ -159,7 +160,8 @@ namespace Akka.NUnit.Runtime
 			var task = _runningJobs.FirstOrDefault(job => job.Worker.Equals(worker));
 			if (task != null)
 			{
-				Self.Tell(task, Sender);
+				_jobQueue.Enqueue(task.Job);
+				NotifyJobIsReady();
 			}
 		}
 

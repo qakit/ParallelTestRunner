@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Configuration.Hocon;
 using Akka.NUnit.Runtime;
@@ -58,7 +59,22 @@ namespace Akka.NUnit
 				Console.WriteLine("Press any key to exit...");
 				Console.ReadLine();
 
+				StopWorkers(workers);
 				system.Shutdown();
+			}
+		}
+
+		private static async void StopWorkers(IEnumerable<IActorRef> workers)
+		{
+			foreach (var worker in workers)
+			{
+				try
+				{
+					await worker.GracefulStop(TimeSpan.FromSeconds(3));
+				}
+				catch (TaskCanceledException)
+				{
+				}				
 			}
 		}
 
