@@ -15,8 +15,13 @@ namespace Akka.NUnit
 {
 	internal static class SlaveProgram
 	{
+		private static readonly string WorkingDir = Environment.CurrentDirectory;
+
 		static void Main(string[] args)
 		{
+			// forcing to load addins from app dir since nunit loads addins from user AppData folder
+			Environment.SetEnvironmentVariable("MONO_ADDINS_REGISTRY", WorkingDir);
+
 			var opts = args.ParseOptions();
 			var numWorkers = opts.Get("workers", 1);
 			var masterUrl = opts.Get("master", "");
