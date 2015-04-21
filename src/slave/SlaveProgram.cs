@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Configuration;
 using Akka.Configuration.Hocon;
 using Akka.NUnit.Runtime;
 using Akka.NUnit.Runtime.Messages;
@@ -15,13 +16,8 @@ namespace Akka.NUnit
 {
 	internal static class SlaveProgram
 	{
-		private static readonly string WorkingDir = Environment.CurrentDirectory;
-
 		static void Main(string[] args)
 		{
-			// forcing to load addins from app dir since nunit loads addins from user AppData folder
-			Environment.SetEnvironmentVariable("MONO_ADDINS_REGISTRY", WorkingDir);
-
 			var opts = args.ParseOptions();
 			var numWorkers = opts.Get("workers", 1);
 			var masterUrl = opts.Get("master", "");
@@ -45,7 +41,11 @@ namespace Akka.NUnit
 				masterUrl = string.Format("akka.tcp://TestSystem@{0}:{1}/user/manager", ip, port);
 			}
 
-			var config = ((AkkaConfigurationSection) ConfigurationManager.GetSection("akka")).AkkaConfig;
+			// patch akka config
+			var hocon = Parser.Parse(((AkkaConfigurationSection)ConfigurationManager.GetSection("akka")).Hocon.Content);
+			hocon.Set("akka.remote.helios.tcp.hostname", ip);
+			var hoconString = hocon.Value.ToString();
+			var config = ConfigurationFactory.ParseString(hoconString);
 
 			using (var system = ActorSystem.Create("TestSystem", config))
 			{

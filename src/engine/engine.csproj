@@ -41,16 +41,28 @@
       <HintPath>..\..\packages\Akka.1.0.0\lib\net45\Akka.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Addins">
-      <HintPath>..\..\lib\nunit.engine\Mono.Addins.dll</HintPath>
+      <HintPath>..\..\lib\nunit\Mono.Addins.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="nunit.core, Version=2.6.4.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\nunit\nunit.core.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.core.interfaces, Version=2.6.4.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\nunit\nunit.core.interfaces.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.engine">
-      <HintPath>..\..\lib\nunit.engine\nunit.engine.dll</HintPath>
+      <HintPath>..\..\lib\nunit\nunit.engine.dll</HintPath>
     </Reference>
     <Reference Include="nunit.engine.api">
-      <HintPath>..\..\lib\nunit.engine\nunit.engine.api.dll</HintPath>
+      <HintPath>..\..\lib\nunit\nunit.engine.api.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.v2.driver, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\nunit\nunit.v2.driver.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
