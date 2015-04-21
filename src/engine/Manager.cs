@@ -181,6 +181,7 @@ namespace Akka.NUnit.Runtime
 				var package = new TestPackage(new[] {assemblyPath});
 				package.Settings["ProcessModel"] = "Single";
 				package.Settings["WorkDirectory"] = Path.GetDirectoryName(assemblyPath);
+				package.Settings["ShadowCopyFiles"] = false;
 
 				var builder = new TestFilterBuilder(null, run.Include, run.Exclude);
 				var filter = builder.GetFilter();
@@ -189,11 +190,12 @@ namespace Akka.NUnit.Runtime
 				{
 					var tests = XElement.Load(new XmlNodeReader(runner.Explore(filter)));
 
-					return from d in tests.Descendants()
-						let type = d.GetAttribute("type", (string) null)
-						let name = d.GetAttribute("fullname", (string) null)
+					return from fixture in tests.Descendants()
+						let type = fixture.GetAttribute("type", (string) null)
+						let name = fixture.GetAttribute("fullname", (string) null)
 						where name != null && type != null && type == "TestFixture"
-						select new Job(assemblyPath, name, artifactsUrl);
+						let testCases = fixture.Elements().Select(e => e.GetAttribute("fullname", string.Empty)).ToArray()
+						   select new Job(assemblyPath, name, testCases, artifactsUrl);
 				}
 			}
 		}

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Xml;
 using System.Xml.Linq;
@@ -6,6 +8,7 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
 using Akka.NUnit.Runtime.Reporters;
+using NUnit.Core.Filters;
 using NUnit.Engine;
 
 namespace Akka.NUnit.Runtime
@@ -95,21 +98,24 @@ namespace Akka.NUnit.Runtime
 				package.Settings["ProcessModel"] = "Single";
 				package.Settings["DomainUsage"] = "None";
 				package.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
+				package.Settings["ShadowCopyFiles"] = false;
 
-				var builder = new TestFilterBuilder
-				{
-					Tests = {job.TestFixture}
-				};
+				var builder = new TestFilterBuilder(job.Tests);
 
 				var filter = builder.GetFilter();
 
+				Console.SetOut(Console.Out);
+				Console.SetError(Console.Error);
+
+				Console.WriteLine("Filter is {0}", filter.Text);
 				var listener = new EventListener(Self.Path.Name, e => Sender.Tell(e, Self));
 
 				using (var runner = engine.GetRunner(package))
 				{
+//					var filter2 = new SimpleNameFilter();
 					var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
 					// TODO accumulate results if master is died
-					// Console.WriteLine(results);
+//					 Console.WriteLine("Results are {0}", results);
 				}
 			}
 		}
