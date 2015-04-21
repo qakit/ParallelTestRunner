@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
@@ -93,6 +94,7 @@ namespace Akka.NUnit.Runtime
 				var package = new TestPackage(new[] {job.Assembly}); // TODO now assuming assembly path
 				package.Settings["ProcessModel"] = "Single";
 				package.Settings["DomainUsage"] = "None";
+				package.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
 
 				var builder = new TestFilterBuilder
 				{

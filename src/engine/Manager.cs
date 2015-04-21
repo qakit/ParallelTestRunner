@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
@@ -179,6 +180,8 @@ namespace Akka.NUnit.Runtime
 
 				var package = new TestPackage(new[] {assemblyPath});
 				package.Settings["ProcessModel"] = "Single";
+				package.Settings["WorkDirectory"] = Path.GetDirectoryName(assemblyPath);
+
 				var builder = new TestFilterBuilder(null, run.Include, run.Exclude);
 				var filter = builder.GetFilter();
 
