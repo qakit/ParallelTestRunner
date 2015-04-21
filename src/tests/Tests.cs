@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Diagnostics;
 using System.Threading;
 using NUnit.Framework;
 
@@ -18,7 +20,7 @@ namespace Tests
 		[SetUp]
 		public void SetUP()
 		{
-			Console.WriteLine("SHOULD BE RUNNED BEFORE EACH TEST");
+			Debug.Print("SHOULD BE RUNNED BEFORE EACH TEST");
 		}
 
 		[TearDown]
@@ -32,6 +34,23 @@ namespace Tests
 		{
 			FixtureName = "";
 			Console.WriteLine("THIS TEARDOWN SHOULD BE RUNNED ONCE");
+		}
+
+		public IEnumerable TestData
+		{
+			get
+			{
+				yield return new TestCaseData("Test A", new Action(() => Console.WriteLine("ACTION")));
+				yield return new TestCaseData("Test B", new Action(() => Console.WriteLine("ACTION2"))).SetName("THis is test b");
+			}
+		}
+
+		[TestCaseSource("TestData")]
+		public void EnumTest(string test, Action todo)
+		{
+			Thread.Sleep(1000);
+			Console.WriteLine(test);
+			todo();
 		}
 
 		[Test]
