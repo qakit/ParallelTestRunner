@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using Akka.NUnit.Runtime.Messages;
+using NUnit.Core;
 
 namespace Akka.NUnit.Runtime.Reporters
 {
@@ -22,19 +23,19 @@ namespace Akka.NUnit.Runtime.Reporters
 
 		public void Report(TestEvent e)
 		{
-			switch ((e.Kind ?? string.Empty).ToLowerInvariant())
+			switch (e.Kind)
 			{
-				case "start-suite":
-					TestSuiteStarted(e.Name);
+				case EventKind.SuiteStarted:
+					TestSuiteStarted(e.FullName);
 					break;
-				case "start-test":
-					TestStarted(e.Name);
+				case EventKind.TestStarted:
+					TestStarted(e.FullName);
 					break;
-				case "test-case":
+				case EventKind.TestFinishied:
 					TestFinished(e);
 					break;
-				case "test-suite":
-					TestSuiteFinished(e.Name);
+				case EventKind.SuiteFinished:
+					TestSuiteFinished(e.FullName);
 					break;
 			}
 		}
@@ -46,20 +47,21 @@ namespace Akka.NUnit.Runtime.Reporters
 
 		private void TestFinished(TestEvent e)
 		{
-			switch ((e.Result ?? string.Empty).ToLowerInvariant())
+			switch (e.Result)
 			{
-				case "passed":
-					TC_TestFinished(e.Name, e.Duration);
+				case ResultState.Success:
+					TC_TestFinished(e.FullName, e.Time);
 					break;
-				case "inconclusive":
-					TC_TestIgnored(e.Name, "Inconclusive");
+				case ResultState.Inconclusive:
+					TC_TestIgnored(e.FullName, "Inconclusive");
 					break;
-				case "skipped":
-					TC_TestIgnored(e.Name, e.IgnoreReason);
+				case ResultState.Skipped:
+					TC_TestIgnored(e.FullName, e.Message);
 					break;
-				case "failed":
-					TC_TestFailed(e.Name, e.Error, e.StackTrace);
-					TC_TestFinished(e.Name, e.Duration);
+				case ResultState.Failure:
+				case ResultState.Error:
+					TC_TestFailed(e.FullName, e.Message, e.StackTrace);
+					TC_TestFinished(e.FullName, e.Time);
 					break;
 			}
 		}

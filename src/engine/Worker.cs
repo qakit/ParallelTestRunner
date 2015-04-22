@@ -96,7 +96,6 @@ namespace Akka.NUnit.Runtime
 			ServiceManager.Services.InitializeServices();
 
 			var testPackage = new TestPackage(job.Assembly);
-			testPackage.AutoBinPath = true;
 			testPackage.Settings["ProcessModel"] = ProcessModel.Single;
 			testPackage.Settings["DomainUsage"] = DomainUsage.None;
 			testPackage.Settings["ShadowCopyFiles"] = false;
@@ -107,13 +106,21 @@ namespace Akka.NUnit.Runtime
 
 			try
 			{
-				var collector = new NUnitEventListener(outWriter, errorWriter);
+				var self = Self;
+				var sender = Sender;
+
+				var listener = new CompositeEventListener(new EventListener[]
+				{
+					new EventListenerImpl(Self.Path.Name, e => sender.Tell(e, self)),
+					new NUnitEventListener(outWriter, errorWriter)
+				});
+
 				var testFilter = new SimpleNameFilter(job.TestFixture);
 
 				using (var testRunner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
 				{
 					testRunner.Load(testPackage);
-					var result = testRunner.Run(collector, testFilter, true, LoggingThreshold.All);
+					var result = testRunner.Run(listener, testFilter, true, LoggingThreshold.All);
 					return result;
 				}
 			}

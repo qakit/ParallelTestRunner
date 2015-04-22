@@ -67,6 +67,18 @@ namespace Tests
 			Thread.Sleep(100);
 			Console.WriteLine("{0}.TestCase({1})", FixtureName, input);
 		}
+
+		[Test]
+		public void FailTest()
+		{
+			Assert.AreEqual(1, 2);
+		}
+
+		[Test]
+		public void ExceptionTest()
+		{
+			throw new Exception("BLAAA");
+		}
     }
 
 	[TestFixture]

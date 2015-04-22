@@ -92,17 +92,12 @@ namespace Akka.NUnit.Runtime
 
 			Receive<TestEvent>(e =>
 			{
-				// TODO integrate teamcity reporter
-				Log.Info("{0} {1} is {2} by '{3}'.", e.Kind, e.FullName, e.Result, e.Worker);
+//				// TODO integrate teamcity reporter
+//				Log.Info("{0} {1} is {2} by '{3}'.", e.Kind, e.TestName.FullName, e.Result, e.Worker);
 
+				//TODO turn on from cmd args; --teamcity
 				var reporter = new TeamCityReporter(Console.Out);
 				reporter.Report(e);
-
-				if (!string.IsNullOrEmpty(e.Output))
-				{
-					Log.Info("Output:");
-					Log.Info(e.Output);
-				}
 			});
 
 			Receive<Bye>(msg =>
