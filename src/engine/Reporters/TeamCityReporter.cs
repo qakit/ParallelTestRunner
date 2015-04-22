@@ -50,7 +50,7 @@ namespace Akka.NUnit.Runtime.Reporters
 			switch (e.Result)
 			{
 				case ResultState.Success:
-					TC_TestFinished(e.FullName, e.Time);
+					TC_TestFinished(e.FullName, e.Duration);
 					break;
 				case ResultState.Inconclusive:
 					TC_TestIgnored(e.FullName, "Inconclusive");
@@ -61,7 +61,7 @@ namespace Akka.NUnit.Runtime.Reporters
 				case ResultState.Failure:
 				case ResultState.Error:
 					TC_TestFailed(e.FullName, e.Message, e.StackTrace);
-					TC_TestFinished(e.FullName, e.Time);
+					TC_TestFinished(e.FullName, e.Duration);
 					break;
 			}
 		}

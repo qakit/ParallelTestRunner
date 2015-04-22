@@ -24,7 +24,7 @@ namespace Akka.NUnit.Runtime.Messages
 		public ResultState Result { get; set; }
 		public string Message { get; set; }
 		public string StackTrace { get; set; }
-		public double Time { get; set; }
+		public double Duration { get; set; }
 
 		// valid for finished events
 		public Exception Error { get; set; }

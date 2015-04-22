@@ -6,7 +6,6 @@ using System.Reflection;
 using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
-using Akka.NUnit.Runtime.Reporters;
 using NUnit.Framework;
 
 namespace Akka.NUnit.Runtime
@@ -17,11 +16,15 @@ namespace Akka.NUnit.Runtime
 		{
 			public readonly IActorRef Worker;
 			public readonly Job Job;
+			public readonly DateTime Started;
+			public readonly bool IsLast;
 
-			public RunningJob(IActorRef worker, Job job)
+			public RunningJob(IActorRef worker, Job job, bool isLast)
 			{
 				Worker = worker;
 				Job = job;
+				IsLast = isLast;
+				Started = DateTime.UtcNow;
 			}
 		}
 
@@ -47,6 +50,9 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
+			var firstJobStarted = DateTime.UtcNow;
+			var firstJob = true;
+
 			Receive<RequestJob>(request =>
 			{
 				var worker = Sender;
@@ -58,7 +64,13 @@ namespace Akka.NUnit.Runtime
 				Job job;
 				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out job))
 				{
-					_runningJobs.Add(new RunningJob(worker, job));
+					if (firstJob)
+					{
+						firstJob = false;
+						firstJobStarted = DateTime.UtcNow;
+					}
+
+					_runningJobs.Add(new RunningJob(worker, job, _jobQueue.Count == 0));
 					worker.Tell(job, Self);
 				}
 				else
@@ -69,7 +81,20 @@ namespace Akka.NUnit.Runtime
 
 			Receive<JobCompleted>(_ =>
 			{
-				_runningJobs.RemoveAll(job => job.Worker.Equals(Sender));
+				var i = _runningJobs.FindIndex(job => job.Worker.Equals(Sender));
+				if (i >= 0)
+				{
+					var job = _runningJobs[i];
+					_runningJobs.RemoveAt(i);
+
+					var duration = DateTime.UtcNow - job.Started;
+					Console.WriteLine("Job duration: {0}s", duration.TotalSeconds);
+
+					if (job.IsLast)
+					{
+						Console.WriteLine("Total duration: {0}s", (DateTime.UtcNow - firstJobStarted).TotalSeconds);
+					}
+				}
 
 				if (_jobQueue.Count > 0)
 				{
@@ -94,10 +119,9 @@ namespace Akka.NUnit.Runtime
 			{
 //				// TODO integrate teamcity reporter
 //				Log.Info("{0} {1} is {2} by '{3}'.", e.Kind, e.TestName.FullName, e.Result, e.Worker);
-
 				//TODO turn on from cmd args; --teamcity
-				var reporter = new TeamCityReporter(Console.Out);
-				reporter.Report(e);
+				//var reporter = new TeamCityReporter(Console.Out);
+				//reporter.Report(e);
 			});
 
 			Receive<Bye>(msg =>

@@ -9,8 +9,7 @@ using NUnit.Util;
 
 namespace Akka.NUnit.Runtime.Reporters
 {
-	[Serializable]
-	internal class NUnitEventListener : EventListener
+	internal class NUnitEventListener : MarshalByRefObject, EventListener
 	{
 		private int testRunCount;
 		private int testIgnoreCount;

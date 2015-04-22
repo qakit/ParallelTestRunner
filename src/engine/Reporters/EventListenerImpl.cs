@@ -4,7 +4,7 @@ using NUnit.Core;
 
 namespace Akka.NUnit.Runtime.Reporters
 {
-	internal sealed class EventListenerImpl : EventListener
+	internal sealed class EventListenerImpl : MarshalByRefObject, EventListener
 	{
 		private readonly string _workerName;
 		private readonly Action<TestEvent> _handler;
@@ -84,7 +84,7 @@ namespace Akka.NUnit.Runtime.Reporters
 				Result = result.ResultState,
 				Message = result.Message,
 				StackTrace = result.StackTrace,
-				Time = result.Time,
+				Duration = result.Time,
 				FullName = result.Test.TestName.FullName
 			};
 		}

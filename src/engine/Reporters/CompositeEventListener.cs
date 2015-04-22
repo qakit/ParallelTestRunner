@@ -5,7 +5,7 @@ using NUnit.Core;
 
 namespace Akka.NUnit.Runtime.Reporters
 {
-	internal sealed class CompositeEventListener : EventListener
+	internal sealed class CompositeEventListener : MarshalByRefObject, EventListener
 	{
 		private readonly List<EventListener> _listeners;
 

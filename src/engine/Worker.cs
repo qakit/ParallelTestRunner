@@ -96,12 +96,13 @@ namespace Akka.NUnit.Runtime
 		private TestResult RunTests(Job job)
 		{
 			ServiceManager.Services.AddService(new DomainManager());
+			ServiceManager.Services.AddService(new ProjectService());
 			ServiceManager.Services.AddService(new TestAgency());
 			ServiceManager.Services.InitializeServices();
 
 			var testPackage = new TestPackage(job.Assembly);
 			testPackage.Settings["ProcessModel"] = ProcessModel.Single;
-			testPackage.Settings["DomainUsage"] = DomainUsage.None;
+			testPackage.Settings["DomainUsage"] = DomainUsage.Single;
 			testPackage.Settings["ShadowCopyFiles"] = false;
 			testPackage.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
 			var configPath = new FileInfo(Path.Combine(Path.GetDirectoryName(job.Assembly),
