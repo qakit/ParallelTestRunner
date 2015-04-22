@@ -10,7 +10,10 @@ using NUnit.Framework;
 
 namespace Akka.NUnit.Runtime
 {
-	public class Manager : ReceiveActor
+	/// <summary>
+	/// Manages jobs and workers.
+	/// </summary>
+	public sealed class Manager : ReceiveActor
 	{
 		private class RunningJob
 		{
@@ -42,12 +45,8 @@ namespace Akka.NUnit.Runtime
 				Context.Watch(Sender);
 				_workers.Add(Sender);
 
-				Sender.Tell(new Greet(), Self);
-
-				if (_jobQueue.Count > 0)
-				{
-					Sender.Tell(new JobIsReady(), Self);
-				}
+				Sender.Tell(Greet.Instance, Self);
+				NotifyJobIsReady(Sender);
 			});
 
 			var firstJobStarted = DateTime.UtcNow;
@@ -75,7 +74,7 @@ namespace Akka.NUnit.Runtime
 				}
 				else
 				{
-					worker.Tell(new NoJob(), Self);
+					worker.Tell(NoJob.Instance, Self);
 				}
 			});
 
@@ -96,18 +95,16 @@ namespace Akka.NUnit.Runtime
 					}
 				}
 
-				if (_jobQueue.Count > 0)
-				{
-					Sender.Tell(new JobIsReady(), Self);
-				}
+				NotifyJobIsReady(Sender);
 			});
 
 			Receive<RunTests>(msg =>
 			{
 				Log.Info("New test run of assembly {0}", msg.Assembly);
 
-				var testFixtures = LoadTestFixtures(msg);
-				foreach (var job in testFixtures)
+				var jobs = LoadTestFixtures(msg);
+
+				foreach (var job in jobs)
 				{
 					_jobQueue.Enqueue(job);
 				}
@@ -117,7 +114,7 @@ namespace Akka.NUnit.Runtime
 
 			Receive<TestEvent>(e =>
 			{
-//				// TODO integrate teamcity reporter
+//				// TODO console reporter
 //				Log.Info("{0} {1} is {2} by '{3}'.", e.Kind, e.TestName.FullName, e.Result, e.Worker);
 				//TODO turn on from cmd args; --teamcity
 				//var reporter = new TeamCityReporter(Console.Out);
@@ -155,13 +152,19 @@ namespace Akka.NUnit.Runtime
 			}
 		}
 
-		private void NotifyJobIsReady()
+		private void NotifyJobIsReady(IActorRef current = null)
 		{
 			if (_jobQueue.Count <= 0) return;
 
+			if (current != null)
+			{
+				current.Tell(JobIsReady.Instance, Self);
+				return;
+			}
+
 			foreach (var worker in _workers)
 			{
-				worker.Tell(new JobIsReady(), Self);
+				worker.Tell(JobIsReady.Instance, Self);
 			}
 		}
 

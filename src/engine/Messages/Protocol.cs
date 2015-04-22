@@ -2,7 +2,10 @@
 {
 	// COMMON MESSAGES
 
-	public sealed class Greet {}
+	public sealed class Greet
+	{
+		public static readonly Greet Instance = new Greet();
+	}
 
 	public sealed class Bye
 	{
@@ -14,13 +17,32 @@
 		public string Reason { get; private set; }
 	}
 
+	public sealed class Busy
+	{
+		public static readonly Busy Instance = new Busy();
+	}
+
 	// MANAGER MESSAGES
 
-	public sealed class JobIsReady { }
-	public sealed class NoJob { }
+	public sealed class JobIsReady
+	{
+		public static readonly JobIsReady Instance = new JobIsReady();
+	}
+
+	public sealed class NoJob
+	{
+		public static readonly NoJob Instance = new NoJob();
+	}
 
 	// WORKER MESSAGES
 
-	public sealed class RequestJob { }
-	public sealed class JobCompleted {}
+	public sealed class RequestJob
+	{
+		public static readonly RequestJob Instance = new RequestJob();
+	}
+
+	public sealed class JobCompleted
+	{
+		// TODO could have a job id
+	}
 }

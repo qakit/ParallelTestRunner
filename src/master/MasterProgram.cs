@@ -15,9 +15,6 @@ namespace Akka.NUnit
 {
 	internal static partial class MasterProgram
 	{
-		// TODO allow specify working dir
-		private static readonly string WorkingDir = Environment.CurrentDirectory;
-
 		private static HoconRoot Hocon { get; set; }
 		private static ActorSystem Scene { get; set; }
 		private static IActorRef Manager { get; set; }
@@ -52,7 +49,7 @@ namespace Akka.NUnit
 				Start();
 
 				// now push assemblies to be tested
-				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
+				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)))
 				{
 					Manager.Tell(new RunTests(path, include, exclude));
 				}

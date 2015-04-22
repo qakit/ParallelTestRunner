@@ -1,14 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Configuration;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Linq;
 using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
@@ -22,10 +16,11 @@ namespace Akka.NUnit.Runtime
 	/// <summary>
 	/// Runs single test fixture.
 	/// </summary>
-	public class Worker : ReceiveActor
+	public sealed class Worker : ReceiveActor
 	{
 		protected ILoggingAdapter Log = Context.GetLogger();
 		private readonly HashSet<IActorRef> _masters = new HashSet<IActorRef>();
+		private bool _busy;
 
 		public Worker()
 		{
@@ -37,7 +32,7 @@ namespace Akka.NUnit.Runtime
 			Receive<SetMaster>(msg =>
 			{
 				Log.Info("Setting new master {0} for worker {1}", msg.Master.PathString, Self.Path.Name);
-				msg.Master.Tell(new Greet(), Self);
+				msg.Master.Tell(Greet.Instance, Self);
 			});
 
 			Receive<Greet>(_ =>
@@ -55,25 +50,33 @@ namespace Akka.NUnit.Runtime
 
 			Receive<JobIsReady>(_ =>
 			{
-				Log.Debug("There are new jobs");
-				Sender.Tell(new RequestJob());
+				if (_busy)
+				{
+					Sender.Tell(Busy.Instance);
+					return;
+				}
+
+				Sender.Tell(RequestJob.Instance);
 			});
 
 			Receive<Job>(job =>
 			{
+				_busy = true;
+
 				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
 				Log.Info("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
 
 				var sender = Sender;
 				var self = Self;
 
-				// Task.Run(() =>
+				Task.Run(() =>
 				{
 					RunTests(job, sender, self);
+
+					_busy = false;
+
 					sender.Tell(new JobCompleted(), self);
-				}
-				//);
-				
+				});
 			});
 
 			Receive<NoJob>(_ => { });
@@ -108,19 +111,23 @@ namespace Akka.NUnit.Runtime
 			ServiceManager.Services.AddService(new TestAgency());
 			ServiceManager.Services.InitializeServices();
 
+			var assemblyDir = Path.GetDirectoryName(job.Assembly);
+
 			var testPackage = new TestPackage(job.Assembly);
 			testPackage.Settings["ProcessModel"] = ProcessModel.Single;
 			testPackage.Settings["DomainUsage"] = DomainUsage.Single;
 			testPackage.Settings["ShadowCopyFiles"] = false;
-			testPackage.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
-			var configPath = new FileInfo(Path.Combine(Path.GetDirectoryName(job.Assembly),
-				Path.GetFileName(job.Assembly) + ".config"));
+			testPackage.Settings["WorkDirectory"] = assemblyDir;
 
-			var configMap = new ExeConfigurationFileMap {ExeConfigFilename = configPath.FullName};
-			var config = ConfigurationManager.OpenMappedExeConfiguration(configMap, ConfigurationUserLevel.None);
-
-			foreach (var key in config.AppSettings.Settings.AllKeys)
-				ConfigurationManager.AppSettings[key] = config.AppSettings.Settings[key].Value;
+			// TODO enable config injection if really needed
+//			var configPath = new FileInfo(Path.Combine(assemblyDir, Path.GetFileName(job.Assembly) + ".config"));
+//			var configMap = new ExeConfigurationFileMap {ExeConfigFilename = configPath.FullName};
+//			var config = ConfigurationManager.OpenMappedExeConfiguration(configMap, ConfigurationUserLevel.None);
+//
+//			foreach (var key in config.AppSettings.Settings.AllKeys)
+//			{
+//				ConfigurationManager.AppSettings[key] = config.AppSettings.Settings[key].Value;
+//			}
 			
 			var outWriter = Console.Out;
 			var errorWriter = Console.Error;
@@ -134,13 +141,12 @@ namespace Akka.NUnit.Runtime
 					new NUnitEventListener(outWriter, errorWriter)
 				});
 
-				var testFilter = new SimpleNameFilter(job.TestFixture);
+				var filter = new SimpleNameFilter(job.TestFixture);
 
-//				using (configPath.Exists ? AppConfig.Change(configPath.FullName) : DisposableStub.Instance)
-				using (var testRunner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
+				using (var runner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
 				{
-					testRunner.Load(testPackage);
-					var result = testRunner.Run(listener, testFilter, true, LoggingThreshold.All);
+					runner.Load(testPackage);
+					var result = runner.Run(listener, filter, true, LoggingThreshold.All);
 					return result;
 				}
 			}
@@ -154,11 +160,5 @@ namespace Akka.NUnit.Runtime
 				Console.SetError(errorWriter);
 			}
 		}
-	}
-
-	internal sealed class DisposableStub : IDisposable
-	{
-		public static readonly IDisposable Instance = new DisposableStub();
-		public void Dispose() { }
 	}
 }

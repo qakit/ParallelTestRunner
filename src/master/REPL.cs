@@ -38,13 +38,14 @@ namespace Akka.NUnit
 					Start();
 					var include = cmd.Options.Get("include", "").Split(',', ';');
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
-					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
+					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)))
 					{
 						Manager.Tell(new RunTests(path, include, exclude));
 					}
 					break;
 
 				case "slave":
+				case "spawn":
 					SpawnSlave();
 					break;
 
@@ -66,7 +67,7 @@ namespace Akka.NUnit
 				{
 					await Task.Delay(TimeSpan.FromMilliseconds(random.Next(100, 200)));
 
-					manager.Tell(new RunTests(Path.Combine(WorkingDir, "tests.dll"), null, null));
+					manager.Tell(new RunTests(Path.Combine(Environment.CurrentDirectory, "tests.dll"), null, null));
 				}
 			});
 		}
