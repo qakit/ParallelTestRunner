@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
@@ -63,9 +64,16 @@ namespace Akka.NUnit.Runtime
 				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
 				Log.Info("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
 
-				RunTests(job);
+				var sender = Sender;
+				var self = Self;
+
+				// Task.Run(() =>
+				{
+					RunTests(job, sender, self);
+					sender.Tell(new JobCompleted(), self);
+				}
+				//);
 				
-				Sender.Tell(new JobCompleted(), Self);
 			});
 
 			Receive<NoJob>(_ => { });
@@ -93,7 +101,7 @@ namespace Akka.NUnit.Runtime
 			}
 		}
 
-		private TestResult RunTests(Job job)
+		private static TestResult RunTests(Job job, IActorRef sender, IActorRef self)
 		{
 			ServiceManager.Services.AddService(new DomainManager());
 			ServiceManager.Services.AddService(new ProjectService());
@@ -120,12 +128,9 @@ namespace Akka.NUnit.Runtime
 
 			try
 			{
-				var self = Self;
-				var sender = Sender;
-
 				var listener = new CompositeEventListener(new EventListener[]
 				{
-					new EventListenerImpl(Self.Path.Name, e => sender.Tell(e, self)),
+					new EventListenerImpl(self.Path.Name, e => sender.Tell(e, self)),
 					new NUnitEventListener(outWriter, errorWriter)
 				});
 

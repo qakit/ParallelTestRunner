@@ -30,7 +30,7 @@ namespace Akka.NUnit
 		{
 			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
-			NumWorkers = opts.Get("workers", 4);
+			NumWorkers = opts.Get("workers", 1);
 			var port = opts.Get("port", 8091);
 			var include = opts.Get("include", "").Split(',', ';');
 			var exclude = opts.Get("exclude", "").Split(',', ';');
