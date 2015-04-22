@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
 using Akka.Actor;
@@ -100,9 +104,18 @@ namespace Akka.NUnit.Runtime
 			testPackage.Settings["DomainUsage"] = DomainUsage.None;
 			testPackage.Settings["ShadowCopyFiles"] = false;
 			testPackage.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
+			var configPath = new FileInfo(Path.Combine(Path.GetDirectoryName(job.Assembly),
+				Path.GetFileName(job.Assembly) + ".config"));
 
+			var configMap = new ExeConfigurationFileMap {ExeConfigFilename = configPath.FullName};
+			var config = ConfigurationManager.OpenMappedExeConfiguration(configMap, ConfigurationUserLevel.None);
+
+			foreach (var key in config.AppSettings.Settings.AllKeys)
+				ConfigurationManager.AppSettings[key] = config.AppSettings.Settings[key].Value;
+			
 			var outWriter = Console.Out;
 			var errorWriter = Console.Error;
+			var olddir = Environment.CurrentDirectory;
 
 			try
 			{
@@ -117,6 +130,7 @@ namespace Akka.NUnit.Runtime
 
 				var testFilter = new SimpleNameFilter(job.TestFixture);
 
+//				using (configPath.Exists ? AppConfig.Change(configPath.FullName) : DisposableStub.Instance)
 				using (var testRunner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
 				{
 					testRunner.Load(testPackage);
@@ -126,6 +140,7 @@ namespace Akka.NUnit.Runtime
 			}
 			finally
 			{
+				Environment.CurrentDirectory = olddir;
 				outWriter.Flush();
 				errorWriter.Flush();
 
@@ -133,5 +148,11 @@ namespace Akka.NUnit.Runtime
 				Console.SetError(errorWriter);
 			}
 		}
+	}
+
+	internal sealed class DisposableStub : IDisposable
+	{
+		public static readonly IDisposable Instance = new DisposableStub();
+		public void Dispose() { }
 	}
 }
