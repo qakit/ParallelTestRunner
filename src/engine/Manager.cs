@@ -2,11 +2,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
-using NUnit.Framework;
 
 namespace Akka.NUnit.Runtime
 {
@@ -80,7 +78,7 @@ namespace Akka.NUnit.Runtime
 
 			Receive<JobCompleted>(_ =>
 			{
-				var i = _runningJobs.FindIndex(job => job.Worker.Equals(Sender));
+				var i = _runningJobs.FindIndex(job => Equals(job.Worker, Sender));
 				if (i >= 0)
 				{
 					var job = _runningJobs[i];
@@ -102,7 +100,10 @@ namespace Akka.NUnit.Runtime
 			{
 				Log.Info("New test run of assembly {0}", msg.Assembly);
 
-				var jobs = LoadTestFixtures(msg);
+				// TODO zip package with testing assemblies
+				// TODO copy zip package to HTTP server dir
+
+				var jobs = NUnit2Runner.LoadFixtures(msg);
 
 				foreach (var job in jobs)
 				{
@@ -177,52 +178,12 @@ namespace Akka.NUnit.Runtime
 
 		private void ReaddTaskIfAny(IActorRef worker)
 		{
-			var task = _runningJobs.FirstOrDefault(job => job.Worker.Equals(worker));
+			var task = _runningJobs.FirstOrDefault(job => Equals(job.Worker, worker));
 			if (task != null)
 			{
 				_jobQueue.Enqueue(task.Job);
 				NotifyJobIsReady();
 			}
-		}
-
-		private IEnumerable<Job> LoadTestFixtures(RunTests run)
-		{
-			var assembly = Assembly.LoadFrom(run.Assembly);
-
-			var fixtures = from t in assembly.GetTypes()
-				where t.HasAttribute<TestFixtureAttribute>()
-				let cat = t.GetAttribute<CategoryAttribute>().IfNotNull(a => a.Name) ?? string.Empty
-				where (run.Include.Length == 0 || run.Include.Any(s => s == cat)) && run.Exclude.All(s => s != cat)
-				select t;
-
-			// TODO zip package with testing assemblies
-			// TODO copy zip package to HTTP server dir
-
-			return (from type in fixtures select new Job(run.Assembly, type.FullName, GetTests(type), run.Assembly)).ToList();
-		}
-
-		private static string[] GetTests(Type type)
-		{
-			var listOfTestsInLibrary = (from method in type.GetMethods()
-				where method.HasAttribute<TestAttribute>() ||
-				      method.HasAttribute<TestCaseAttribute>() ||
-				      method.HasAttribute<TestCaseSourceAttribute>()
-				select type.FullName + "." + method.Name).ToArray();
-			return listOfTestsInLibrary;
-		}
-	}
-
-	internal static class ReflectionExt
-	{
-		public static T GetAttribute<T>(this ICustomAttributeProvider provider, bool inherit = true) where T:Attribute
-		{
-			var attrs = (T[])provider.GetCustomAttributes(typeof (T), inherit);
-			return attrs.FirstOrDefault();
-		}
-
-		public static bool HasAttribute<T>(this ICustomAttributeProvider provider, bool inherit = true) where T : Attribute
-		{
-			return provider.GetAttribute<T>() != null;
 		}
 	}
 }

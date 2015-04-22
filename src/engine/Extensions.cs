@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Xml.Linq;
 
 namespace Akka.NUnit.Runtime
@@ -45,6 +46,20 @@ namespace Akka.NUnit.Runtime
 		public static TR IfNotNull<TI, TR>(this TI input, Func<TI, TR> eval) where TI:class
 		{
 			return input != null ? eval(input) : default(TR);
+		}
+	}
+
+	internal static class ReflectionExtensions
+	{
+		public static T GetAttribute<T>(this ICustomAttributeProvider provider, bool inherit = true) where T : Attribute
+		{
+			var attrs = (T[])provider.GetCustomAttributes(typeof(T), inherit);
+			return attrs.FirstOrDefault();
+		}
+
+		public static bool HasAttribute<T>(this ICustomAttributeProvider provider, bool inherit = true) where T : Attribute
+		{
+			return provider.GetAttribute<T>() != null;
 		}
 	}
 }
