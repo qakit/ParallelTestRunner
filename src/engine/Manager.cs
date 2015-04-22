@@ -13,7 +13,7 @@ namespace Akka.NUnit.Runtime
 	/// <summary>
 	/// Manages jobs and workers.
 	/// </summary>
-	public sealed class Manager : ReceiveActor
+	public class Manager : ReceiveActor
 	{
 		private class RunningJob
 		{
@@ -148,7 +148,7 @@ namespace Akka.NUnit.Runtime
 
 			foreach (var worker in _workers)
 			{
-				worker.Tell(new Bye("night"));
+				worker.Tell(Bye.Shutdown, Self);
 			}
 		}
 

@@ -16,7 +16,7 @@ namespace Akka.NUnit.Runtime
 	/// <summary>
 	/// Runs single test fixture.
 	/// </summary>
-	public sealed class Worker : ReceiveActor
+	public class Worker : ReceiveActor
 	{
 		protected ILoggingAdapter Log = Context.GetLogger();
 		private readonly HashSet<IActorRef> _masters = new HashSet<IActorRef>();
@@ -61,6 +61,12 @@ namespace Akka.NUnit.Runtime
 
 			Receive<Job>(job =>
 			{
+				if (_busy)
+				{
+					Sender.Tell(Busy.Instance, Self);
+					return;
+				}
+
 				_busy = true;
 
 				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
@@ -100,7 +106,7 @@ namespace Akka.NUnit.Runtime
 
 			foreach (var master in _masters)
 			{
-				master.Tell(new Bye("fire"), Self);
+				master.Tell(Bye.Shutdown, Self);
 			}
 		}
 

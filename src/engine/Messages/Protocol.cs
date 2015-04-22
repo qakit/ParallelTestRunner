@@ -9,6 +9,8 @@
 
 	public sealed class Bye
 	{
+		public static readonly Bye Shutdown = new Bye("shutdown");
+
 		public Bye(string reason = null)
 		{
 			Reason = reason;
