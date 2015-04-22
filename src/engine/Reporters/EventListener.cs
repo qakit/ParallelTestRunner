@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
 using NUnit.Core;
 using NUnit.Util;
@@ -9,44 +11,49 @@ namespace Akka.NUnit.Runtime.Reporters
 {
 
 	[Serializable]
-	class EventCollector : EventListener
+	public class NUnitEventListener : EventListener
 	{
 		private int testRunCount;
 		private int testIgnoreCount;
 		private int failureCount;
 		private int level;
 
-		private ConsoleWriter writer;
+		private TextWriter outWriter;
+		private TextWriter errorWriter;
 
-		StringCollection messages = new StringCollection();
+		StringCollection messages;
 
-		private bool debugger = false;
+		private bool progress = false;
 		private string currentTestName;
 
-		public EventCollector(ConsoleWriter writer)
+		private readonly ArrayList unhandledExceptions = new ArrayList();
+
+		public NUnitEventListener(TextWriter outWriter, TextWriter errorWriter)
 		{
-			debugger = Debugger.IsAttached;
 			level = 0;
-			this.writer = writer;
+			this.outWriter = outWriter;
+			this.errorWriter = errorWriter;
 			this.currentTestName = string.Empty;
+
+			AppDomain.CurrentDomain.UnhandledException +=
+				OnUnhandledException;
 		}
 
-		public void RunStarted(Test[] tests)
+		public bool HasExceptions
 		{
-			var x = 0;
+			get { return unhandledExceptions.Count > 0; }
 		}
 
-		public void RunStarted(string a, int b)
+		public void WriteExceptions()
 		{
-			var x = 0;
+			Console.WriteLine();
+			Console.WriteLine("Unhandled exceptions:");
+			int index = 1;
+			foreach (string msg in unhandledExceptions)
+				Console.WriteLine("{0}) {1}", index++, msg);
 		}
 
-		public void RunFinished(TestResult[] results)
-		{
-			var x = 0;
-		}
-
-		public void RunFinished(Exception exception)
+		public void RunStarted(string name, int testCount)
 		{
 		}
 
@@ -54,22 +61,29 @@ namespace Akka.NUnit.Runtime.Reporters
 		{
 		}
 
+		public void RunFinished(Exception exception)
+		{
+		}
+
 		public void TestFinished(TestResult testResult)
 		{
-			if (testResult.Executed)
+			switch (testResult.ResultState)
 			{
-				testRunCount++;
-
-				if (testResult.IsFailure)
-				{
+				case ResultState.Error:
+				case ResultState.Failure:
+				case ResultState.Cancelled:
+					testRunCount++;
 					failureCount++;
-					Console.Write("F");
-					if (debugger)
-					{
-						messages.Add(string.Format("{0}) {1} :", failureCount, testResult.Test.TestName));
-						messages.Add(testResult.Message.Trim(Environment.NewLine.ToCharArray()));
 
-						string stackTrace = StackTraceFilter.Filter(testResult.StackTrace);
+					if (progress)
+						Console.Write("F");
+
+					messages.Add(string.Format("{0}) {1} :", failureCount, testResult.Test.TestName.FullName));
+					messages.Add(testResult.Message.Trim(Environment.NewLine.ToCharArray()));
+
+					string stackTrace = StackTraceFilter.Filter(testResult.StackTrace);
+					if (stackTrace != null && stackTrace != string.Empty)
+					{
 						string[] trace = stackTrace.Split(System.Environment.NewLine.ToCharArray());
 						foreach (string s in trace)
 						{
@@ -80,143 +94,109 @@ namespace Akka.NUnit.Runtime.Reporters
 							}
 						}
 					}
-				}
-			}
-			else
-			{
-				testIgnoreCount++;
-				Console.Write("N");
-			}
+					break;
 
+				case ResultState.Inconclusive:
+				case ResultState.Success:
+					testRunCount++;
+					break;
+
+				case ResultState.Ignored:
+				case ResultState.Skipped:
+				case ResultState.NotRunnable:
+					testIgnoreCount++;
+
+					if (progress)
+						Console.Write("N");
+					break;
+			}
 
 			currentTestName = string.Empty;
-		}
-
-		public void TestStarted(TestMethod testCase)
-		{
-			currentTestName = testCase.TestName.FullName;
 		}
 
 		public void TestStarted(TestName testName)
 		{
 			currentTestName = testName.FullName;
+
+			if (progress)
+				Console.Write(".");
 		}
 
-
-		public void SuiteStarted(TestName name)
+		public void SuiteStarted(TestName testName)
 		{
-			if (debugger && level++ == 0)
+			if (level++ == 0)
 			{
+				messages = new StringCollection();
 				testRunCount = 0;
 				testIgnoreCount = 0;
 				failureCount = 0;
-				Console.WriteLine("################################ UNIT TESTS ################################");
-				Console.WriteLine("Running tests in '" + name + "'...");
+				outWriter.WriteLine("################################ UNIT TESTS ################################");
+				outWriter.WriteLine("Running tests in '" + testName.FullName + "'...");
 			}
 		}
 
 		public void SuiteFinished(TestResult suiteResult)
 		{
-			if (debugger && --level == 0)
+			if (--level == 0)
 			{
-				Console.WriteLine("############################################################################");
+				outWriter.WriteLine("############################################################################");
 
 				if (messages.Count == 0)
 				{
-					Console.WriteLine("##############                 S U C C E S S               #################");
+					outWriter.WriteLine("##############                 S U C C E S S               #################");
 				}
 				else
 				{
-					Console.WriteLine("##############                F A I L U R E S              #################");
+					outWriter.WriteLine("##############                F A I L U R E S              #################");
 
 					foreach (string s in messages)
 					{
-						Trace.WriteLine(s);
+						outWriter.WriteLine(s);
 					}
 				}
 
-				writer.WriteLine("############################################################################");
-				writer.WriteLine("Executed tests : " + testRunCount);
-				writer.WriteLine("Ignored tests  : " + testIgnoreCount);
-				writer.WriteLine("Failed tests   : " + failureCount);
-				writer.WriteLine("Total time     : " + suiteResult.Time + " seconds");
-				writer.WriteLine("############################################################################");
+				outWriter.WriteLine("############################################################################");
+				outWriter.WriteLine("Executed tests       : " + testRunCount);
+				outWriter.WriteLine("Ignored tests        : " + testIgnoreCount);
+				outWriter.WriteLine("Failed tests         : " + failureCount);
+				outWriter.WriteLine("Unhandled exceptions : " + unhandledExceptions.Count);
+				outWriter.WriteLine("Total time           : " + suiteResult.Time + " seconds");
+				outWriter.WriteLine("############################################################################");
+			}
+		}
+
+		private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+		{
+			if (e.ExceptionObject.GetType() != typeof(System.Threading.ThreadAbortException))
+			{
+				this.UnhandledException((Exception)e.ExceptionObject);
 			}
 		}
 
 		public void UnhandledException(Exception exception)
 		{
-			string msg = string.Format("##### Unhandled Exception while running {0}", currentTestName);
-
 			// If we do labels, we already have a newline
-			//if ( !options.labels ) writer.WriteLine();
-			writer.WriteLine(msg);
-			writer.WriteLine(exception.ToString());
+			unhandledExceptions.Add(currentTestName + " : " + exception.ToString());
+			//if (!options.labels) outWriter.WriteLine();
+			string msg = string.Format("##### Unhandled Exception while running {0}", currentTestName);
+			//outWriter.WriteLine(msg);
+			//outWriter.WriteLine(exception.ToString());
 
-			if (debugger)
-			{
-				Console.WriteLine(msg);
-				Console.WriteLine(exception.ToString());
-			}
+			Trace.WriteLine(msg);
+			Trace.WriteLine(exception.ToString());
 		}
 
 		public void TestOutput(TestOutput output)
 		{
+			switch (output.Type)
+			{
+				case TestOutputType.Out:
+					outWriter.Write(output.Text);
+					break;
+				case TestOutputType.Error:
+					errorWriter.Write(output.Text);
+					break;
+			}
 		}
 	}
-
-//	/// <summary>
-//	/// Processes NUnit runner events.
-//	/// </summary>
-//	internal sealed class EventListener : ITestEventListener
-//	{
-//		private readonly string _workerName;
-//		private readonly Action<TestEvent> _handler;
-//
-//		public EventListener(string workerName, Action<TestEvent> handler)
-//		{
-//			if (handler == null) throw new ArgumentNullException("handler");
-//
-//			_workerName = workerName;
-//			_handler = handler;
-//		}
-//
-//		public void OnTestEvent(string report)
-//		{
-//			var e = ParseEvent(XElement.Parse(report));
-//			_handler(e);
-//		}
-//
-//		private TestEvent ParseEvent(XElement e)
-//		{
-//			double duration;
-//			double.TryParse(e.GetAttribute("duration", ""), NumberStyles.Float, CultureInfo.InvariantCulture, out duration);
-//
-//			var output = e.Element("output").IfNotNull(x => x.Value);
-//			var reason = e.XPathSelectElement("reason/message").IfNotNull(x => x.Value);
-//			var error = e.XPathSelectElement("failure/message").IfNotNull(x => x.Value);
-//			var stackTrace = e.XPathSelectElement("failure/stack-trace").IfNotNull(x => x.Value);
-//
-//			var name = e.GetAttribute("name", "");
-//
-//			return new TestEvent
-//			{
-//				Worker = _workerName,
-//				Kind = e.Name.LocalName,
-//				Id = e.GetAttribute("id", 0),
-//				Name = name,
-//				FullName = e.GetAttribute("fullname", (string) null) ?? name,
-//				ClassName = e.GetAttribute("classname", ""),
-//				MethodName = e.GetAttribute("methodname", ""),
-//				Result = e.GetAttribute("result", "").ToUpperInvariant(),
-//				Asserts = e.GetAttribute("asserts", 0),
-//				Duration = duration,
-//
-//				Output = output ?? string.Empty,
-//				Error = error ?? string.Empty,
-//				StackTrace = stackTrace ?? string.Empty,
-//				IgnoreReason = reason
-//			};
-//		}
-//	}
 }

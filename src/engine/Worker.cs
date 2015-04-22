@@ -89,20 +89,11 @@ namespace Akka.NUnit.Runtime
 			}
 		}
 
-		private void RunTests(Job job)
+		private TestResult RunTests(Job job)
 		{
 			ServiceManager.Services.AddService(new DomainManager());
-			//ServiceManager.Services.AddService( new RecentFilesService() );
-			ServiceManager.Services.AddService(new ProjectService());
-			//ServiceManager.Services.AddService( new TestLoader() );
-			ServiceManager.Services.AddService(new AddinRegistry());
-			ServiceManager.Services.AddService(new AddinManager());
 			ServiceManager.Services.AddService(new TestAgency());
-
 			ServiceManager.Services.InitializeServices();
-
-			ConsoleWriter outStream = new ConsoleWriter(Console.Out);
-			ConsoleWriter errorStream = new ConsoleWriter(Console.Error);
 
 			var testPackage = new TestPackage(job.Assembly);
 			testPackage.AutoBinPath = true;
@@ -111,17 +102,29 @@ namespace Akka.NUnit.Runtime
 			testPackage.Settings["ShadowCopyFiles"] = false;
 			testPackage.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
 
-			EventListener collector = new EventCollector(outStream);
+			var outWriter = Console.Out;
+			var errorWriter = Console.Error;
 
-			TestFilter testFilter = new SimpleNameFilter(job.TestFixture);
-			TestResult result = null;
-
-			using (TestRunner testRunner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
+			try
 			{
-				testRunner.Load(testPackage);
-				result = testRunner.Run(collector, testFilter, true, LoggingThreshold.All);
+				var collector = new NUnitEventListener(outWriter, errorWriter);
+				var testFilter = new SimpleNameFilter(job.TestFixture);
+
+				using (var testRunner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
+				{
+					testRunner.Load(testPackage);
+					var result = testRunner.Run(collector, testFilter, true, LoggingThreshold.All);
+					return result;
+				}
 			}
-			var x = 0;
+			finally
+			{
+				outWriter.Flush();
+				errorWriter.Flush();
+
+				Console.SetOut(outWriter);
+				Console.SetError(errorWriter);
+			}
 		}
 	}
 }
