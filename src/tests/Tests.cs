@@ -6,7 +6,7 @@ using NUnit.Framework;
 
 namespace Tests
 {
-	[TestFixture]
+	[TestFixture, Category("Test")]
     public class Fixture1
 	{
 		private string FixtureName;

@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Xml;
-using System.Xml.Linq;
+using System.Reflection;
 using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
 using Akka.NUnit.Runtime.Reporters;
-using NUnit.Engine;
-using TestRun = Akka.NUnit.Runtime.Messages.TestRun;
+using NUnit.Framework;
 
 namespace Akka.NUnit.Runtime
 {
@@ -31,7 +28,7 @@ namespace Akka.NUnit.Runtime
 		protected ILoggingAdapter Log = Context.GetLogger();
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
-		private readonly List<RunningJob> _runningJobs = new List<RunningJob>(); 
+		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
 
 		public Manager()
 		{
@@ -80,7 +77,7 @@ namespace Akka.NUnit.Runtime
 				}
 			});
 
-			Receive<TestRun>(msg =>
+			Receive<RunTests>(msg =>
 			{
 				Log.Info("New test run of assembly {0}", msg.Assembly);
 
@@ -166,38 +163,44 @@ namespace Akka.NUnit.Runtime
 			}
 		}
 
-		private IEnumerable<Job> LoadTestFixtures(TestRun run)
+		private IEnumerable<Job> LoadTestFixtures(RunTests run)
 		{
+			var assembly = Assembly.LoadFrom(run.Assembly);
+
+			var fixtures = from t in assembly.GetTypes()
+				where t.HasAttribute<TestFixtureAttribute>()
+				let cat = t.GetAttribute<CategoryAttribute>().IfNotNull(a => a.Name) ?? string.Empty
+				where (run.Include.Length == 0 || run.Include.Any(s => s == cat)) && run.Exclude.All(s => s != cat)
+				select t;
+
 			// TODO zip package with testing assemblies
 			// TODO copy zip package to HTTP server dir
 
-			var assemblyPath = run.Assembly;
-			var artifactsUrl = assemblyPath; // TODO URL to http server
+			return (from type in fixtures select new Job(run.Assembly, type.FullName, GetTests(type), run.Assembly)).ToList();
+		}
 
-			using (var engine = TestEngineActivator.CreateInstance())
-			{
-				engine.Initialize();
+		private static string[] GetTests(Type type)
+		{
+			var listOfTestsInLibrary = (from method in type.GetMethods()
+				where method.HasAttribute<TestAttribute>() ||
+				      method.HasAttribute<TestCaseAttribute>() ||
+				      method.HasAttribute<TestCaseSourceAttribute>()
+				select type.FullName + "." + method.Name).ToArray();
+			return listOfTestsInLibrary;
+		}
+	}
 
-				var package = new TestPackage(new[] {assemblyPath});
-				package.Settings["ProcessModel"] = "Single";
-				package.Settings["WorkDirectory"] = Path.GetDirectoryName(assemblyPath);
-				package.Settings["ShadowCopyFiles"] = false;
+	internal static class ReflectionExt
+	{
+		public static T GetAttribute<T>(this ICustomAttributeProvider provider, bool inherit = true) where T:Attribute
+		{
+			var attrs = (T[])provider.GetCustomAttributes(typeof (T), inherit);
+			return attrs.FirstOrDefault();
+		}
 
-				var builder = new TestFilterBuilder(null, run.Include, run.Exclude);
-				var filter = builder.GetFilter();
-
-				using (var runner = engine.GetRunner(package))
-				{
-					var tests = XElement.Load(new XmlNodeReader(runner.Explore(filter)));
-
-					return from fixture in tests.Descendants()
-						let type = fixture.GetAttribute("type", (string) null)
-						let name = fixture.GetAttribute("fullname", (string) null)
-						where name != null && type != null && type == "TestFixture"
-						let testCases = fixture.Elements().Select(e => e.GetAttribute("fullname", string.Empty)).ToArray()
-						   select new Job(assemblyPath, name, testCases, artifactsUrl);
-				}
-			}
+		public static bool HasAttribute<T>(this ICustomAttributeProvider provider, bool inherit = true) where T : Attribute
+		{
+			return provider.GetAttribute<T>() != null;
 		}
 	}
 }

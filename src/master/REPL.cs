@@ -40,7 +40,7 @@ namespace Akka.NUnit
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
 					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
 					{
-						Manager.Tell(new TestRun(path, include, exclude));
+						Manager.Tell(new RunTests(path, include, exclude));
 					}
 					break;
 
@@ -66,7 +66,7 @@ namespace Akka.NUnit
 				{
 					await Task.Delay(TimeSpan.FromMilliseconds(random.Next(100, 200)));
 
-					manager.Tell(new TestRun(Path.Combine(WorkingDir, "tests.dll"), null, null));
+					manager.Tell(new RunTests(Path.Combine(WorkingDir, "tests.dll"), null, null));
 				}
 			});
 		}
