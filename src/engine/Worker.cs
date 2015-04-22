@@ -8,8 +8,9 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
 using Akka.NUnit.Runtime.Reporters;
+using NUnit.Core;
 using NUnit.Core.Filters;
-using NUnit.Engine;
+using NUnit.Util;
 
 namespace Akka.NUnit.Runtime
 {
@@ -90,34 +91,37 @@ namespace Akka.NUnit.Runtime
 
 		private void RunTests(Job job)
 		{
-			using (var engine = TestEngineActivator.CreateInstance())
+			ServiceManager.Services.AddService(new DomainManager());
+			//ServiceManager.Services.AddService( new RecentFilesService() );
+			ServiceManager.Services.AddService(new ProjectService());
+			//ServiceManager.Services.AddService( new TestLoader() );
+			ServiceManager.Services.AddService(new AddinRegistry());
+			ServiceManager.Services.AddService(new AddinManager());
+			ServiceManager.Services.AddService(new TestAgency());
+
+			ServiceManager.Services.InitializeServices();
+
+			ConsoleWriter outStream = new ConsoleWriter(Console.Out);
+			ConsoleWriter errorStream = new ConsoleWriter(Console.Error);
+
+			var testPackage = new TestPackage(job.Assembly);
+			testPackage.AutoBinPath = true;
+			testPackage.Settings["ProcessModel"] = ProcessModel.Single;
+			testPackage.Settings["DomainUsage"] = DomainUsage.None;
+			testPackage.Settings["ShadowCopyFiles"] = false;
+			testPackage.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
+
+			EventListener collector = new EventCollector(outStream);
+
+			TestFilter testFilter = new SimpleNameFilter(job.TestFixture);
+			TestResult result = null;
+
+			using (TestRunner testRunner = new DefaultTestRunnerFactory().MakeTestRunner(testPackage))
 			{
-				engine.Initialize();
-
-				var package = new TestPackage(new[] {job.Assembly}); // TODO now assuming assembly path
-				package.Settings["ProcessModel"] = "Single";
-				package.Settings["DomainUsage"] = "None";
-				package.Settings["WorkDirectory"] = Path.GetDirectoryName(job.Assembly);
-				package.Settings["ShadowCopyFiles"] = false;
-
-				var builder = new TestFilterBuilder(job.Tests);
-
-				var filter = builder.GetFilter();
-
-				Console.SetOut(Console.Out);
-				Console.SetError(Console.Error);
-
-				Console.WriteLine("Filter is {0}", filter.Text);
-				var listener = new EventListener(Self.Path.Name, e => Sender.Tell(e, Self));
-
-				using (var runner = engine.GetRunner(package))
-				{
-//					var filter2 = new SimpleNameFilter();
-					var results = XElement.Load(new XmlNodeReader(runner.Run(listener, filter)));
-					// TODO accumulate results if master is died
-//					 Console.WriteLine("Results are {0}", results);
-				}
+				testRunner.Load(testPackage);
+				result = testRunner.Run(collector, testFilter, true, LoggingThreshold.All);
 			}
+			var x = 0;
 		}
 	}
 }

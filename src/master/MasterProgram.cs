@@ -30,7 +30,7 @@ namespace Akka.NUnit
 		{
 			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
-			NumWorkers = opts.Get("workers", 2);
+			NumWorkers = opts.Get("workers", 1);
 			var port = opts.Get("port", 8091);
 			var include = opts.Get("include", "").Split(',', ';');
 			var exclude = opts.Get("exclude", "").Split(',', ';');
@@ -54,7 +54,7 @@ namespace Akka.NUnit
 				// now push assemblies to be tested
 				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(WorkingDir, p)))
 				{
-					Manager.Tell(new TestRun(path, include, exclude));
+					Manager.Tell(new RunTests(path, include, exclude));
 				}
 
 				Shell.Run(Exec);
