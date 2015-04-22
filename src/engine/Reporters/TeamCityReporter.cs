@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.IO;
 using Akka.NUnit.Runtime.Messages;
@@ -8,7 +9,7 @@ namespace Akka.NUnit.Runtime.Reporters
 	/// <summary>
 	/// Contains methods for issuing TeamCity service messages on the Console.
 	/// </summary>
-	internal sealed class TeamCityReporter
+	internal sealed class TeamCityReporter : MarshalByRefObject, IReporter
 	{
 		private readonly TextWriter _writer;
 
@@ -16,9 +17,9 @@ namespace Akka.NUnit.Runtime.Reporters
 		/// Construct a TeamCityEventHandler
 		/// </summary>
 		/// <param name="writer">TextWriter to which output should be directed</param>
-		public TeamCityReporter(TextWriter writer)
+		public TeamCityReporter(TextWriter writer = null)
 		{
-			_writer = writer;
+			_writer = writer ?? Console.Out;
 		}
 
 		public void Report(TestEvent e)

@@ -1,4 +1,6 @@
-﻿namespace Akka.NUnit.Runtime.Messages
+﻿using Akka.Actor;
+
+namespace Akka.NUnit.Runtime.Messages
 {
 	// COMMON MESSAGES
 
@@ -26,6 +28,23 @@
 
 	// MANAGER MESSAGES
 
+	public enum ReporterKind
+	{
+		Silent,
+		Console,
+		TeamCity
+	}
+
+	public sealed class SetReporter
+	{
+		public SetReporter(ReporterKind kind)
+		{
+			Kind = kind;
+		}
+
+		public ReporterKind Kind { get; private set; }
+	}
+
 	public sealed class JobIsReady
 	{
 		public static readonly JobIsReady Instance = new JobIsReady();
@@ -37,6 +56,16 @@
 	}
 
 	// WORKER MESSAGES
+
+	public sealed class SetMaster
+	{
+		public SetMaster(ActorSelection master)
+		{
+			Master = master;
+		}
+
+		public ActorSelection Master { get; private set; }
+	}
 
 	public sealed class RequestJob
 	{

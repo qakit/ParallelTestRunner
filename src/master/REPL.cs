@@ -12,7 +12,7 @@ namespace Akka.NUnit
 	{
 		private static bool Exec(Shell.Command cmd)
 		{
-			switch (cmd.Name.ToLowerInvariant())
+			switch (cmd.Name)
 			{
 				case "help":
 					Console.WriteLine("q[uit] | exit - stop master");
@@ -35,7 +35,7 @@ namespace Akka.NUnit
 					break;
 
 				case "run":
-					Start();
+					EnsureManager();
 					var include = cmd.Options.Get("include", "").Split(',', ';');
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
 					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)))
@@ -51,6 +51,12 @@ namespace Akka.NUnit
 
 				case "sim":
 					Simulate(Manager);
+					break;
+
+				case "tc":
+				case "teamcity":
+					EnsureManager();
+					Manager.Tell(new SetReporter(ReporterKind.TeamCity));
 					break;
 			}
 

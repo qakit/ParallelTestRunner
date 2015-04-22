@@ -74,12 +74,12 @@
   <ItemGroup>
     <Compile Include="Reporters\CompositeEventListener.cs" />
     <Compile Include="Reporters\EventListenerImpl.cs" />
+    <Compile Include="Reporters\SimpleReporters.cs" />
     <Compile Include="Shell.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HoconExtensions.cs" />
     <Compile Include="Manager.cs" />
     <Compile Include="Messages\Job.cs" />
-    <Compile Include="Messages\SetMaster.cs" />
     <Compile Include="Messages\TestEvent.cs" />
     <Compile Include="Messages\RunTests.cs" />
     <Compile Include="Messages\Protocol.cs" />

@@ -17,7 +17,7 @@ namespace Akka.NUnit.Runtime
 
 			public Command(string[] args)
 			{
-				Name = args[0];
+				Name = (args[0] ?? string.Empty).ToLowerInvariant();
 				Options = args.Skip(1).ParseOptions();
 				Input = args.Skip(1).Where(a => !(a.StartsWith("--") || a.StartsWith("/"))).ToArray();
 			}

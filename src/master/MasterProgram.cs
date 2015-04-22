@@ -22,6 +22,7 @@ namespace Akka.NUnit
 
 		// number of local workers
 		private static int NumWorkers { get; set; }
+		private static bool TeamCityReporterEnabled { get; set; }
 
 		static void Main(string[] args)
 		{
@@ -31,8 +32,9 @@ namespace Akka.NUnit
 			var port = opts.Get("port", 8091);
 			var include = opts.Get("include", "").Split(',', ';');
 			var exclude = opts.Get("exclude", "").Split(',', ';');
+			TeamCityReporterEnabled = opts.ContainsKey("teamcity");
 			var input = args.Where(a => !(a.StartsWith("--") || a.StartsWith("/"))).ToArray();
-
+			
 			var ip = GetIpAddress();
 			var pid = Process.GetCurrentProcess().Id;
 			Console.WriteLine("starting master@{0} pid:{1}", ip, pid);
@@ -60,15 +62,30 @@ namespace Akka.NUnit
 			}
 		}
 
-		private static void Start()
+		private static void EnsureManager()
 		{
 			if (Scene != null) return;
+			Start();
+		}
+
+		private static void Start()
+		{
+			if (Scene != null)
+			{
+				Console.WriteLine("spectacle is already underway");
+				return;
+			}
 
 			var hoconString = Hocon.Value.ToString();
 			var config = ConfigurationFactory.ParseString(hoconString);
 
 			Scene = ActorSystem.Create("TestSystem", config);
 			Manager = Scene.ActorOf<Manager>("manager");
+
+			if (TeamCityReporterEnabled)
+			{
+				Manager.Tell(new SetReporter(ReporterKind.TeamCity));
+			}
 
 			var pid = Process.GetCurrentProcess().Id;
 
@@ -96,7 +113,11 @@ namespace Akka.NUnit
 
 		private static async void Stop()
 		{
-			if (Scene == null) return;
+			if (Scene == null)
+			{
+				Console.WriteLine("spectacle is over");
+				return;
+			}
 
 			var pid = Process.GetCurrentProcess().Id;
 			Console.WriteLine("master-{0}@{1} is offline", pid, Manager.Path.ToStringWithAddress());

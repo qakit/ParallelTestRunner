@@ -23,6 +23,7 @@ namespace Akka.NUnit.Runtime.Reporters
 			{
 				Kind = EventKind.RunStarted,
 				Worker = _workerName,
+				FullName = name,
 				TestCount = testCount
 			});
 		}

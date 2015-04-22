@@ -5,6 +5,7 @@ using System.Linq;
 using Akka.Actor;
 using Akka.Event;
 using Akka.NUnit.Runtime.Messages;
+using Akka.NUnit.Runtime.Reporters;
 
 namespace Akka.NUnit.Runtime
 {
@@ -33,9 +34,28 @@ namespace Akka.NUnit.Runtime
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
 		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
-
+		private IReporter _reporter = NullReporter.Instance;
+		
 		public Manager()
 		{
+			Receive<SetReporter>(msg =>
+			{
+				switch (msg.Kind)
+				{
+					case ReporterKind.Silent:
+						_reporter = NullReporter.Instance;
+						break;
+					case ReporterKind.Console:
+						_reporter = new TextReporter();
+						break;
+					case ReporterKind.TeamCity:
+						_reporter = new TeamCityReporter();
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+			});
+
 			Receive<Greet>(_ =>
 			{
 				Log.Info("New worker {0}", Sender.Path.Name);
@@ -85,11 +105,11 @@ namespace Akka.NUnit.Runtime
 					_runningJobs.RemoveAt(i);
 
 					var duration = DateTime.UtcNow - job.Started;
-					Console.WriteLine("Job duration: {0}s", duration.TotalSeconds);
+					Log.Info("Job duration: {0}s", duration.TotalSeconds);
 
 					if (job.IsLast)
 					{
-						Console.WriteLine("Total duration: {0}s", (DateTime.UtcNow - firstJobStarted).TotalSeconds);
+						Log.Info("Total duration: {0}s", (DateTime.UtcNow - firstJobStarted).TotalSeconds);
 					}
 				}
 
@@ -113,14 +133,7 @@ namespace Akka.NUnit.Runtime
 				NotifyJobIsReady();
 			});
 
-			Receive<TestEvent>(e =>
-			{
-//				// TODO console reporter
-//				Log.Info("{0} {1} is {2} by '{3}'.", e.Kind, e.TestName.FullName, e.Result, e.Worker);
-				//TODO turn on from cmd args; --teamcity
-				//var reporter = new TeamCityReporter(Console.Out);
-				//reporter.Report(e);
-			});
+			Receive<TestEvent>(e => _reporter.Report(e));
 
 			Receive<Bye>(msg =>
 			{
