@@ -50,14 +50,21 @@ namespace Akka.NUnit
 			using (var system = ActorSystem.Create("TestSystem", config))
 			{
 				// TODO probing of multiple masters
-				var master = system.ActorSelection(masterUrl);
-
+				var master = system.ActorSelection(masterUrl); ;
 				var workers = new List<IActorRef>();
 				
 				for (int i = 1; i <= numWorkers; i++)
 				{
 					var worker = system.ActorOf<Worker>(string.Format("w{0}-{1}", pid, i));
 					workers.Add(worker);
+
+					bool isMasterFound;
+					
+					do
+					{
+						isMasterFound = IsResolveSuccess(() => master.ResolveOne(TimeSpan.FromSeconds(1)).Wait());
+					} while (!isMasterFound);
+
 					worker.Tell(new SetMaster(master));
 				}
 
@@ -69,6 +76,19 @@ namespace Akka.NUnit
 			}
 		}
 
+		private static bool IsResolveSuccess(Action resolveAction)
+		{
+			try
+			{
+				resolveAction();
+				return true;
+			}
+			catch (Exception e)
+			{
+				return false;
+			}
+		}
+		
 		private static async void StopWorkers(IEnumerable<IActorRef> workers)
 		{
 			foreach (var worker in workers)
