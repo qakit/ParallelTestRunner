@@ -1,4 +1,6 @@
-﻿namespace Akka.NUnit.Runtime.Messages
+﻿using System.IO;
+
+namespace Akka.NUnit.Runtime.Messages
 {
 	public sealed class Job
 	{
@@ -6,11 +8,11 @@
 		{
 			Assembly = assembly;
 			TestFixture = testFixture;
-			ArtifactsUrl = artifactsUrl;
+			ArtifactsUrl = new DirectoryInfo(artifactsUrl.Trim('"'));
 		}
 
 		public string Assembly { get; private set; }
 		public string TestFixture { get; private set; }
-		public string ArtifactsUrl { get; private set; }
+		public DirectoryInfo ArtifactsUrl { get; private set; }
 	}
 }
