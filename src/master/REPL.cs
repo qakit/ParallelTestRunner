@@ -16,7 +16,7 @@ namespace Akka.NUnit
 			{
 				case "help":
 					Console.WriteLine("q[uit] | exit - stop master");
-					Console.WriteLine("run [--include=cat1,cat2,...] [--exclude=cat1,cat2,...] <assemblies> - new test run");
+                    Console.WriteLine("run [--include=cat1,cat2,...] [--exclude=cat1,cat2,...] --artifactsPath=<artifacts> <assemblies> - new test run");
 					Console.WriteLine("sim - run simulation");
 					break;
 
@@ -38,9 +38,11 @@ namespace Akka.NUnit
 					EnsureManager();
 					var include = cmd.Options.Get("include", "").Split(',', ';');
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
+                    
 					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)))
 					{
-						Manager.Tell(new RunTests(path, include, exclude));
+					    var artifactsPath = cmd.Options.Get("artifactsPath", new FileInfo(path).Directory.FullName);
+                        Manager.Tell(new RunTests(path, include, exclude, artifactsPath));
 					}
 					break;
 
@@ -72,8 +74,9 @@ namespace Akka.NUnit
 				for (var i = 0; i < 1; i++)
 				{
 					await Task.Delay(TimeSpan.FromMilliseconds(random.Next(100, 200)));
+				    var assembly = new FileInfo(Path.Combine(Environment.CurrentDirectory, "tests.dll"));
 
-					manager.Tell(new RunTests(Path.Combine(Environment.CurrentDirectory, "tests.dll"), null, null));
+				    manager.Tell(new RunTests(assembly.FullName, null, null, assembly.Directory.FullName));
 				}
 			});
 		}

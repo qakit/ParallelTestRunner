@@ -28,7 +28,7 @@ namespace Akka.NUnit
 		{
 			// TODO specify log level from CLI args
 			var opts = args.ParseOptions();
-			NumWorkers = opts.Get("workers", 1);
+			NumWorkers = opts.Get("workers", 0);
 			var port = opts.Get("port", 8091);
 			var include = opts.Get("include", "").Split(',', ';');
 			var exclude = opts.Get("exclude", "").Split(',', ';');
@@ -53,7 +53,9 @@ namespace Akka.NUnit
 				// now push assemblies to be tested
 				foreach (var path in input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)))
 				{
-					Manager.Tell(new RunTests(path, include, exclude));
+                    //TODO remove duplicate code here and in REPL.cs class
+                    var artifactsPath = opts.Get("artifactsPath", new FileInfo(path).Directory.FullName);
+					Manager.Tell(new RunTests(path, include, exclude, artifactsPath));
 				}
 
 				Shell.Run(Exec);

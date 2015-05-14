@@ -13,7 +13,7 @@ namespace Akka.NUnit.Runtime
 			return (from arg in args
 				where arg.StartsWith("--") || arg.StartsWith("/")
 				// TODO support quoting to pass values with spaces
-				let p = arg.Substring(arg.StartsWith("--") ? 2 : 1).Split('=', ':')
+				let p = arg.Substring(arg.StartsWith("--") ? 2 : 1).Split('=')
 				where p.Length <= 2
 				let key = p[0].Trim()
 				let val = p.Length == 2 ? p[1].Trim() : "true"

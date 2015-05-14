@@ -28,7 +28,7 @@ namespace Akka.NUnit.Runtime
 				where cat.In(run.Include) && cat.NotIn(run.Exclude)
 				select t;
 
-			return (from type in fixtures select new Job(run.Assembly, type.FullName, run.Assembly)).ToList();
+			return (from type in fixtures select new Job(run.Assembly, type.FullName, run.ArtifactsPath)).ToList();
 		}
 
 		private static bool In(this string cat, string[] cats)

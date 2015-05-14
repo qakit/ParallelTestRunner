@@ -168,7 +168,14 @@ namespace Akka.NUnit.Runtime
 
 		private void NotifyJobIsReady(IActorRef current = null)
 		{
-			if (_jobQueue.Count <= 0) return;
+		    if (_jobQueue.Count <= 0)
+		    {
+                foreach (var worker in _workers)
+                {
+                    worker.Tell(NoJob.Instance, Self);
+                }
+                return;
+		    }
 
 			if (current != null)
 			{
