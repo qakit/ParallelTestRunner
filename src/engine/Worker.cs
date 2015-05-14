@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
@@ -15,6 +16,7 @@ namespace Akka.NUnit.Runtime
 		private readonly HashSet<IActorRef> _masters = new HashSet<IActorRef>();
 		private bool _busy;
         private string WorkingDir { get; set; }
+        private DirectoryInfo CurrentWorkingDir { get; set; }
 
 		public Worker()
 		{
@@ -68,6 +70,9 @@ namespace Akka.NUnit.Runtime
 
 				_busy = true;
 
+                //Generate tmp dir for jobs
+                if(CurrentWorkingDir == null)
+                    GenerateTmpWorkingDir();
 
                 //TODO download artifacts here;
 				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
@@ -86,7 +91,10 @@ namespace Akka.NUnit.Runtime
 				});
 			});
 
-			Receive<NoJob>(_ => { });
+			Receive<NoJob>(_ =>
+			{
+			    CurrentWorkingDir = null;
+			});
 
 			Receive<Terminated>(t =>
 			{
@@ -100,6 +108,13 @@ namespace Akka.NUnit.Runtime
 
 			Receive<PoisonPill>(_ => Unregister());
 		}
+
+        private void GenerateTmpWorkingDir()
+        {
+            var dir = Path.Combine(WorkingDir, Path.GetRandomFileName());
+            Directory.CreateDirectory(dir);
+            CurrentWorkingDir = new DirectoryInfo(dir);
+        }
 
 		private void Unregister()
 		{
