@@ -76,4 +76,14 @@ namespace Akka.NUnit.Runtime.Messages
 	{
 		// TODO could have a job id
 	}
+
+    public sealed class SetWorkingDir
+    {
+        public SetWorkingDir(string workingDir)
+        {
+            WorkingDir = workingDir;
+        }
+
+        public string WorkingDir { get; private set; }
+    }
 }

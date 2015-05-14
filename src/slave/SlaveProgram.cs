@@ -22,6 +22,7 @@ namespace Akka.NUnit
 			var numWorkers = opts.Get("workers", 1);
 			var masterUrl = opts.Get("master", "");
 			var port = opts.Get("port", 8091);
+		    var workingDir = opts.Get("workingDir", Environment.CurrentDirectory);
 
 			var pid = Process.GetCurrentProcess().Id;
 			var ip = GetIpAddress();
@@ -66,6 +67,7 @@ namespace Akka.NUnit
 					} while (!isMasterFound);
 
 					worker.Tell(new SetMaster(master));
+                    worker.Tell(new SetWorkingDir(workingDir));
 				}
 
 				Console.WriteLine("Press any key to exit...");

@@ -14,6 +14,7 @@ namespace Akka.NUnit.Runtime
 		protected ILoggingAdapter Log = Context.GetLogger();
 		private readonly HashSet<IActorRef> _masters = new HashSet<IActorRef>();
 		private bool _busy;
+        private string WorkingDir { get; set; }
 
 		public Worker()
 		{
@@ -28,7 +29,12 @@ namespace Akka.NUnit.Runtime
 				msg.Master.Tell(Greet.Instance, Self);
 			});
 
-			Receive<Greet>(_ =>
+		    Receive<SetWorkingDir>(msg =>
+		    {
+		        WorkingDir = msg.WorkingDir;
+		    });
+
+            Receive<Greet>(_ =>
 			{
 				_masters.Add(Sender);
 			});
@@ -62,6 +68,8 @@ namespace Akka.NUnit.Runtime
 
 				_busy = true;
 
+
+                //TODO download artifacts here;
 				Log.Info("Downloading artifacts {0}", job.ArtifactsUrl);
 				Log.Info("Running test fixture {0} from {1}", job.TestFixture, job.Assembly);
 
