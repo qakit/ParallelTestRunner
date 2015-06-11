@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Forms;
 using NUnit.Framework;
 
 namespace Tests
@@ -58,6 +59,7 @@ namespace Tests
 		{
 			Thread.Sleep(100);
 			Console.WriteLine("Fixture1.Test");
+//			MessageBox.Show("Test");
 		}
 
 		[TestCase("a")]
