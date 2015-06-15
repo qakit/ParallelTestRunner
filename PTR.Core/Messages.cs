@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using NUnit.Core;
+using PTR.Core.NUnit;
 using PTR.Core.Reporters;
 
 namespace PTR.Core
@@ -80,6 +81,16 @@ namespace PTR.Core
 	public class Bye
 	{
 		public static readonly Bye Instance = new Bye();
+	}
+
+	public class Greet
+	{
+		public string Message { get; private set; }
+
+		public Greet(string message)
+		{
+			Message = message;
+		}
 	}
 
 	#region TCMessages

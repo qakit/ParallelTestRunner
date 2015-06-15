@@ -19,6 +19,11 @@ namespace PTR.Core.Actors
 
 		private void Idle()
 		{
+			Receive<Greet>(msg =>
+			{
+				Console.WriteLine(msg.Message);
+			});
+
 			Receive<Job>(msg =>
 			{
 				if (_busy)

@@ -27,7 +27,7 @@ namespace PTR.Core.NUnit
 			return (from type in fixtures select new Job(run.Assembly, type.FullName, run.ReporterActor)).ToList();
 		}
 
-		public static TestResult Run(Job job, IReporter reporter)
+		public static void Run(Job job, IReporter reporter)
 		{
 			ServiceManager.Services.AddService(new DomainManager());
 			ServiceManager.Services.AddService(new ProjectService());
@@ -63,8 +63,7 @@ namespace PTR.Core.NUnit
 				using (var runner = runnerFactory.MakeTestRunner(testPackage))
 				{
 					runner.Load(testPackage);
-					var result = runner.Run(listener, filter, true, LoggingThreshold.All);
-					return result;
+					runner.Run(listener, filter, true, LoggingThreshold.All);
 				}
 			}
 			finally

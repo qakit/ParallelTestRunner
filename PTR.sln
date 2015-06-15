@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PTR.Server", "PTR.Server\PTR.Server.csproj", "{C8C7CD8A-D3E1-41CD-81F5-FF91C9F92E6E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{E32D5ECD-013E-4501-A0B9-3D54E949B9D9}"
@@ -13,6 +15,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tests", "tests\tests.csproj", "{5E8539AB-D64C-40C8-A057-42B11FC2248B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PTR.Core", "PTR.Core\PTR.Core.csproj", "{AC21A563-05BA-4DB7-B77B-03AF796B589B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PTR.Agent", "PTR.Agent\PTR.Agent.csproj", "{F92E0516-899C-4BE6-A715-3360719D758B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +36,10 @@ Global
 		{AC21A563-05BA-4DB7-B77B-03AF796B589B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC21A563-05BA-4DB7-B77B-03AF796B589B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC21A563-05BA-4DB7-B77B-03AF796B589B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F92E0516-899C-4BE6-A715-3360719D758B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F92E0516-899C-4BE6-A715-3360719D758B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F92E0516-899C-4BE6-A715-3360719D758B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F92E0516-899C-4BE6-A715-3360719D758B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

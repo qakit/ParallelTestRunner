@@ -11,7 +11,6 @@ namespace PTR.Core.Actors
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
 		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
-		private IActorRef Reporter { get; set; }
 		
 		public TestCoordinator()
 		{
@@ -20,14 +19,25 @@ namespace PTR.Core.Actors
 
 		private void Idle()
 		{
-			Receive<RegisterTestActor>(msg => Console.WriteLine((string) msg.TestActorPath));
+			Receive<RegisterTestActor>(msg =>
+			{
+				Console.WriteLine("Registering new worker {0}", msg.TestActorPath);
+				var workerAddress = Address.Parse(msg.TestActorPath);
+				var newWorker =
+					Context.ActorOf(
+						Props.Create(() => new TestExecutor())
+							.WithDeploy(Deploy.None.WithScope(new RemoteScope(workerAddress))), 
+							"TestExecutor" + (_workers.Count + 1));
+				_workers.Add(newWorker);
+				newWorker.Tell(new Greet("Hello from register"));
+			});
 
 			Receive<RunTests>(msg =>
 			{
-				var executor = Context.ActorOf(Props.Create(() => new TestExecutor()), "TextExecutor");
-				var executor2 = Context.ActorOf(Props.Create(() => new TestExecutor()), "TextExecutor2");
-				_workers.Add(executor);
-				_workers.Add(executor2);
+//				var executor = Context.ActorOf(Props.Create(() => new TestExecutor()), "TextExecutor");
+//				var executor2 = Context.ActorOf(Props.Create(() => new TestExecutor()), "TextExecutor2");
+//				_workers.Add(executor);
+//				_workers.Add(executor2);
 
 				var jobs = Runner.LoadFixtures(msg);
 				foreach (Job job in jobs)
@@ -122,18 +132,18 @@ namespace PTR.Core.Actors
 			}
 		}
 
-//		protected override SupervisorStrategy SupervisorStrategy()
-//		{
-//			return new OneForOneStrategy(
-//				maxNrOfRetries: 10, 
-//				withinTimeRange: TimeSpan.FromSeconds(30),
-//				localOnlyDecider: x =>
-//				{
-//					//TODO complete code here
-//					if(x is NotImplementedException)
-//						return Directive.Resume;
-//					else return Directive.Restart;
-//				});
-//		}
+		protected override SupervisorStrategy SupervisorStrategy()
+		{
+			return new OneForOneStrategy(
+				maxNrOfRetries: 10, 
+				withinTimeRange: TimeSpan.FromSeconds(30),
+				localOnlyDecider: x =>
+				{
+					//TODO complete code here
+					if(x is NotImplementedException)
+						return Directive.Resume;
+					else return Directive.Restart;
+				});
+		}
 	}
 }
