@@ -3,26 +3,17 @@ using NUnit.Core;
 
 namespace PTR.Core.Reporters
 {
-	public class ConsoleReporter : IReporter
+	public class ConsoleReporter : MarshalByRefObject, IReporter
 	{
-		public void RunStarted(string name, int testCount)
-		{
-//			Console.WriteLine("Run {0} started with {1} tests in it", name, testCount);
-		}
+		public void RunStarted(string name, int testCount) { }
 
-		public void RunFinished(TestResult result)
-		{
-//			Console.WriteLine("Run {0} finished", result.FullName);
-		}
+		public void RunFinished(TestResult result) { }
 
-		public void RunFinished(Exception exception)
-		{
-//			Console.WriteLine("Run finished with exception {0}", exception.Message);
-		}
+		public void RunFinished(Exception exception) { }
 
 		public void TestStarted(TestName testName)
 		{
-//			Console.WriteLine("Test {0} started.", testName.Name);
+			Console.WriteLine("#################### TEST {0} STARTED #####################", testName.Name);
 		}
 
 		public void TestFinished(TestResult result)
@@ -37,7 +28,7 @@ namespace PTR.Core.Reporters
 
 		public void SuiteFinished(TestResult result)
 		{
-			Console.WriteLine((string) "Suite {0} finished", (object) result.Name);
+			Console.WriteLine("Suite {0} finished", result.Name);
 		}
 
 		public void UnhandledException(Exception exception)

@@ -84,6 +84,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reporters\ConsoleReporter.cs" />
     <Compile Include="Reporters\IReporter.cs" />
+    <Compile Include="Reporters\TeamCityReporter.cs" />
     <Compile Include="RunningJob.cs" />
   </ItemGroup>
   <ItemGroup>
