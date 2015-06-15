@@ -21,21 +21,10 @@ namespace PTR.Core.NUnit
 			var fixtures = from t in assembly.GetTypes()
 						   where t.HasAttribute<TestFixtureAttribute>()
 						   let cat = t.GetAttribute<CategoryAttribute>().IfNotNull(a => a.Name) ?? string.Empty
-						   where In(cat, run.Include) && NotIn(cat, run.Exclude)
+						   where cat.In(run.Include) && cat.NotIn(run.Exclude)
 						   select t;
 
 			return (from type in fixtures select new Job(run.Assembly, type.FullName, run.ReporterActor)).ToList();
-		}
-
-		private static bool In(this string cat, string[] cats)
-		{
-			return cats == null || cats.Length == 0
-				   || cats.Any(s => string.Equals(s, cat, StringComparison.InvariantCultureIgnoreCase));
-		}
-
-		private static bool NotIn(this string cat, string[] cats)
-		{
-			return cats == null || cats.All(s => !string.Equals(s, cat, StringComparison.InvariantCultureIgnoreCase));
 		}
 
 		public static TestResult Run(Job job, IReporter reporter)
