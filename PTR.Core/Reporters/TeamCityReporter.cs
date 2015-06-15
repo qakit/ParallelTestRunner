@@ -38,6 +38,7 @@ namespace PTR.Core.Reporters
 					TC_TestIgnored(testName, "Inconclusive");
 					break;
 				case ResultState.Skipped:
+				case ResultState.Ignored:
 					TC_TestIgnored(testName, result.Message);
 					break;
 				case ResultState.Failure:
