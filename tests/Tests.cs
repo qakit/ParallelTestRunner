@@ -83,7 +83,7 @@ namespace Tests
 		}
     }
 
-	[TestFixture]
+	[TestFixture, Category("Test2")]
 	public class Fixture2
 	{
 		[Test]

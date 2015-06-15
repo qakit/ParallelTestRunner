@@ -15,44 +15,24 @@ namespace PTR.Server
 			switch (cmd.Name)
 			{
 				case "help":
-					Console.WriteLine("q[uit] | exit - stop master");
-					Console.WriteLine("run [--include=cat1,cat2,...] [--exclude=cat1,cat2,...] --artifactsPath=<artifacts> <assemblies> - new test run");
-					Console.WriteLine("sim - run simulation");
+					PrintHelp();
 					break;
-
 				case "q":
 				case "quit":
 				case "exit":
 					return false;
-//				case "start":
-//					// TODO num of local workers
-//					Start();
-//					break;
-//
-//				case "stop":
-//					Stop();
-//					break;
-
 				case "run":
 					var include = cmd.Options.Get("include", "").Split(',', ';');
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
 
-//					foreach (var path in cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)))
-//					{
-//						var artifactsPath = cmd.Options.Get("artifactsPath", new FileInfo(path).Directory.FullName);
-						Manager.Tell(new RunTests(PathToTestsDll, include, exclude));
-//					}
+					var path = cmd.Input.Select(p => Path.IsPathRooted(p) ? p : Path.Combine(Environment.CurrentDirectory, p)).FirstOrDefault();
+					if (string.IsNullOrEmpty(path))
+					{
+						PrintHelp();
+						break;
+					}
+					Manager.Tell(new RunTests(path, include, exclude));
 					break;
-
-//				case "slave":
-//				case "spawn":
-//					SpawnSlave();
-//					break;
-//
-//				case "sim":
-//					Simulate(Manager);
-//					break;
-//
 //				case "tc":
 //				case "teamcity":
 //					EnsureManager();
@@ -61,6 +41,15 @@ namespace PTR.Server
 			}
 
 			return true;
+		}
+
+		private static void PrintHelp()
+		{
+			//TODO make better help output;
+			Console.WriteLine("run - Run tests in specified assembly");
+			Console.WriteLine("--include - Include specified category in test run. If specified other categories will be omitted. Sample usage: --include=TestCategory");
+			Console.WriteLine("--exclude - Exclude specified category from test run. If specified all categories will be runned except this one. Sample usage: --exclude=TestCategory");
+			Console.WriteLine("q[uit] | exit - Stops PTR server;");
 		}
 	}
 }
