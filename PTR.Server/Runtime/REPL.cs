@@ -37,6 +37,9 @@ namespace PTR.Server
 
 					Manager.Tell(new RunTests(path, include, exclude, TestReporter));
 					break;
+				default:
+					PrintHelp();
+					break;
 			}
 
 			return true;

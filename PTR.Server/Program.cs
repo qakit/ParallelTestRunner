@@ -1,6 +1,8 @@
-﻿using Akka.Actor;
+﻿using System;
+using Akka.Actor;
 using PTR.Core;
 using PTR.Core.Actors;
+using PTR.Core.Extensions;
 using PTR.Core.Reporters;
 using PTR.Server.Runtime;
 
@@ -27,9 +29,8 @@ namespace PTR.Server
 			else
 			{
 				//TODO parse args and start actors if necessary;
+				Exec(new Shell.Command(args));
 			}
-			//			Manager.Tell(new Messages.RunTests(PathToTestsDll, new string[] { }, new string[] { }));
-			//			Console.ReadLine();
 		}
 	}
 }
