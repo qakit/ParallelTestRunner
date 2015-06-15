@@ -1,13 +1,15 @@
 ﻿using Akka.Actor;
+using PTR.Core;
 using PTR.Core.Actors;
+using PTR.Core.Reporters;
 using PTR.Server.Runtime;
 
 namespace PTR.Server
 {
 	internal static partial class Program
 	{
-		private const string PathToTestsDll = @"D:\C#Projects\akka-nunit\PTR.Server\bin\Debug\tests.dll";
 		private static IActorRef Manager { get; set; }
+		private static IActorRef TestReporter { get; set; }
 
 		public static void Main(string[] args)
 		{
@@ -16,7 +18,10 @@ namespace PTR.Server
 			//if not start Sell.Run asap
 			var testSystem = ActorSystem.Create("TestSystem");
 			Manager = testSystem.ActorOf(Props.Create(() => new TestCoordinator()), "TestCoordinator");
-			
+			TestReporter = testSystem.ActorOf(Props.Create(() => new TestReporter()), "TestReporter");
+			//Set console reporter by default;
+			TestReporter.Tell(new SetReporter(new ConsoleReporter()));
+
 			if(args.Length == 0)
 				Shell.Run(Exec);
 			else

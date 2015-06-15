@@ -11,6 +11,7 @@ namespace PTR.Core.Actors
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
 		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
 		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
+		private IActorRef Reporter { get; set; }
 		
 		public TestCoordinator()
 		{
@@ -39,7 +40,7 @@ namespace PTR.Core.Actors
 
 			Receive<RequestJob>(msg =>
 			{
-				Console.WriteLine((string) "{0} requests a job", (object) Sender.Path.Name);
+				Console.WriteLine("{0} requests a job", Sender.Path.Name);
 				var sender = Sender;
 				var self = Self;
 

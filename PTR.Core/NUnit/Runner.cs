@@ -24,7 +24,7 @@ namespace PTR.Core.NUnit
 						   where In(cat, run.Include) && NotIn(cat, run.Exclude)
 						   select t;
 
-			return (from type in fixtures select new Job(run.Assembly, type.FullName)).ToList();
+			return (from type in fixtures select new Job(run.Assembly, type.FullName, run.ReporterActor)).ToList();
 		}
 
 		private static bool In(this string cat, string[] cats)
@@ -38,7 +38,7 @@ namespace PTR.Core.NUnit
 			return cats == null || cats.All(s => !string.Equals(s, cat, StringComparison.InvariantCultureIgnoreCase));
 		}
 
-		public static TestResult Run(Job job)
+		public static TestResult Run(Job job, IReporter reporter)
 		{
 			ServiceManager.Services.AddService(new DomainManager());
 			ServiceManager.Services.AddService(new ProjectService());
@@ -66,8 +66,7 @@ namespace PTR.Core.NUnit
 
 			try
 			{
-				var consoleReporter = new ConsoleReporter();
-				var listener = new NUnitEventListener(consoleReporter);
+				var listener = new NUnitEventListener(reporter);
 
 				var filter = new SimpleNameFilter(job.TestFixture);
 

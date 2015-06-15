@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
 using PTR.Core.NUnit;
+using PTR.Core.Reporters;
 
 namespace PTR.Core.Actors
 {
@@ -28,11 +29,12 @@ namespace PTR.Core.Actors
 
 				var sender = Sender;
 				var self = Self;
+				var reporter = new RemoteReporter(msg.ReporterActor);
 
 				Task.Run(() =>
 				{
 					_busy = true;
-					Runner.Run(msg);
+					Runner.Run(msg, reporter);
 					_busy = false;
 
 					sender.Tell(JobCompleted.Instance, self);
@@ -46,7 +48,7 @@ namespace PTR.Core.Actors
 
 			Receive<NoJob>(msg =>
 			{
-				Console.WriteLine((string) "NO JOB FOR ME. SO I WILL DIE {0}", (object) Self.Path.Name);
+				Console.WriteLine("NO JOB FOR ME. SO I WILL DIE {0}", Self.Path.Name);
 				Sender.Tell(Bye.Instance);
 			});
 		}

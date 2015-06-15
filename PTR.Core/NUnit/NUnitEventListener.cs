@@ -53,7 +53,7 @@ namespace PTR.Core.NUnit
 			_reporter.UnhandledException(exception);
 		}
 
-		public void TestOutput(TestOutput testOutput)
+		public void TestOutput(global::NUnit.Core.TestOutput testOutput)
 		{
 			_reporter.TestOutput(testOutput);
 		}

@@ -36,7 +36,7 @@ namespace PTR.Core.Reporters
 //			Console.WriteLine("Global exception occurs {0}", exception.Message);
 		}
 
-		public void TestOutput(TestOutput testOutput)
+		public void TestOutput(global::NUnit.Core.TestOutput testOutput)
 		{
 //			Console.WriteLine("Some test output: {0}", testOutput.Text);
 		}

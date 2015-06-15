@@ -63,7 +63,7 @@ namespace PTR.Core.Reporters
 			
 		}
 
-		public void TestOutput(TestOutput testOutput)
+		public void TestOutput(global::NUnit.Core.TestOutput testOutput)
 		{
 			
 		}

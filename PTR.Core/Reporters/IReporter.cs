@@ -13,6 +13,6 @@ namespace PTR.Core.Reporters
 		void SuiteStarted(TestName testName);
 		void SuiteFinished(TestResult result);
 		void UnhandledException(Exception exception);
-		void TestOutput(TestOutput testOutput);
+		void TestOutput(global::NUnit.Core.TestOutput testOutput);
 	}
 }
