@@ -20,7 +20,7 @@ namespace PTR.Core.NUnit
 
 		public void RunFinished(TestResult result)
 		{
-			_reporter.RunFinished(result);
+			_reporter.RunFinished(ConvertToEvent(result, EventKind.RunFinished));
 		}
 
 		public void RunFinished(Exception exception)
@@ -35,7 +35,7 @@ namespace PTR.Core.NUnit
 
 		public void TestFinished(TestResult result)
 		{
-			_reporter.TestFinished(result);
+			_reporter.TestFinished(ConvertToEvent(result, EventKind.TestFinishied));
 		}
 
 		public void SuiteStarted(TestName testName)
@@ -45,7 +45,7 @@ namespace PTR.Core.NUnit
 
 		public void SuiteFinished(TestResult result)
 		{
-			_reporter.SuiteFinished(result);
+			_reporter.SuiteFinished(ConvertToEvent(result, EventKind.SuiteFinished));
 		}
 
 		public void UnhandledException(Exception exception)
@@ -56,6 +56,28 @@ namespace PTR.Core.NUnit
 		public void TestOutput(global::NUnit.Core.TestOutput testOutput)
 		{
 			_reporter.TestOutput(testOutput);
+		}
+
+		private TestEvent ConvertToEvent(TestResult result, EventKind kind)
+		{
+			return new TestEvent
+			{
+				Kind = kind,
+				Result = result.ResultState,
+				Message = result.Message,
+				StackTrace = result.StackTrace,
+				Duration = result.Time,
+				FullName = result.Test.TestName.FullName
+			};
+		}
+
+		private TestEvent ConvertToEvent(Exception error, EventKind kind)
+		{
+			return new TestEvent
+			{
+				Kind = kind,
+				Error = error
+			};
 		}
 	}
 }

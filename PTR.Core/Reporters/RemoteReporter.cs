@@ -1,6 +1,7 @@
 using System;
 using Akka.Actor;
 using NUnit.Core;
+using PTR.Core.NUnit;
 
 namespace PTR.Core.Reporters
 {
@@ -18,7 +19,7 @@ namespace PTR.Core.Reporters
 			_reporterActor.Tell(new RunStarted(name, testCount));
 		}
 
-		public void RunFinished(TestResult result)
+		public void RunFinished(TestEvent result)
 		{
 			_reporterActor.Tell(new RunFinished(result));
 		}
@@ -33,7 +34,7 @@ namespace PTR.Core.Reporters
 			_reporterActor.Tell(new TestStarted(testName));
 		}
 
-		public void TestFinished(TestResult result)
+		public void TestFinished(TestEvent result)
 		{
 			_reporterActor.Tell(new TestFinished(result));
 		}
@@ -43,7 +44,7 @@ namespace PTR.Core.Reporters
 			_reporterActor.Tell(new SuiteStarted(testName));
 		}
 
-		public void SuiteFinished(TestResult result)
+		public void SuiteFinished(TestEvent result)
 		{
 			_reporterActor.Tell(new SuiteFinished(result));
 		}

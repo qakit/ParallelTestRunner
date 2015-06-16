@@ -81,8 +81,10 @@
     <Compile Include="Extensions\XmlExtensions.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Messages.cs" />
+    <Compile Include="NUnit\EventKind.cs" />
     <Compile Include="NUnit\NUnitEventListener.cs" />
     <Compile Include="NUnit\Runner.cs" />
+    <Compile Include="NUnit\TestEvent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reporters\ConsoleReporter.cs" />
     <Compile Include="Reporters\IReporter.cs" />

@@ -1,5 +1,6 @@
 ﻿using System;
 using NUnit.Core;
+using PTR.Core.NUnit;
 
 namespace PTR.Core.Reporters
 {
@@ -7,7 +8,7 @@ namespace PTR.Core.Reporters
 	{
 		public void RunStarted(string name, int testCount) { }
 
-		public void RunFinished(TestResult result) { }
+		public void RunFinished(TestEvent result) { }
 
 		public void RunFinished(Exception exception) { }
 
@@ -16,7 +17,7 @@ namespace PTR.Core.Reporters
 			Console.WriteLine("#################### TEST {0} STARTED #####################", testName.Name);
 		}
 
-		public void TestFinished(TestResult result)
+		public void TestFinished(TestEvent result)
 		{
 //			Console.WriteLine("Test {0} finished success = {1}.", result.Name, result.IsSuccess);
 		}
@@ -26,9 +27,9 @@ namespace PTR.Core.Reporters
 //			Console.WriteLine("Suite {0} started", testName.Name);
 		}
 
-		public void SuiteFinished(TestResult result)
+		public void SuiteFinished(TestEvent result)
 		{
-			Console.WriteLine("Suite {0} finished", result.Name);
+			Console.WriteLine("Suite {0} finished", result.FullName);
 		}
 
 		public void UnhandledException(Exception exception)

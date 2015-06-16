@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using NUnit.Core;
+using PTR.Core.NUnit;
 
 namespace PTR.Core.Reporters
 {
@@ -11,7 +12,7 @@ namespace PTR.Core.Reporters
 			
 		}
 
-		public void RunFinished(TestResult result)
+		public void RunFinished(TestEvent result)
 		{
 			
 		}
@@ -26,13 +27,13 @@ namespace PTR.Core.Reporters
 			Console.WriteLine("##teamcity[testStarted name='{0}' captureStandardOutput='true']", Escape(testName.FullName));
 		}
 
-		public void TestFinished(TestResult result)
+		public void TestFinished(TestEvent result)
 		{
-			var testName = result.Test.TestName.FullName;
-			switch (result.ResultState)
+			var testName = result.FullName;
+			switch (result.Result)
 			{
 				case ResultState.Success:
-					TC_TestFinished(testName, result.Time);
+					TC_TestFinished(testName, result.Duration);
 					break;
 				case ResultState.Inconclusive:
 					TC_TestIgnored(testName, "Inconclusive");
@@ -44,7 +45,7 @@ namespace PTR.Core.Reporters
 				case ResultState.Failure:
 				case ResultState.Error:
 					TC_TestFailed(testName, result.Message, result.StackTrace);
-					TC_TestFinished(testName, result.Time);
+					TC_TestFinished(testName, result.Duration);
 					break;
 			}
 		}
@@ -54,9 +55,9 @@ namespace PTR.Core.Reporters
 			Console.WriteLine("##teamcity[testSuiteStarted name='{0}']", Escape(testName.FullName));
 		}
 
-		public void SuiteFinished(TestResult result)
+		public void SuiteFinished(TestEvent result)
 		{
-			Console.WriteLine("##teamcity[testSuiteFinished name='{0}']", Escape(result.Test.TestName.FullName));
+			Console.WriteLine("##teamcity[testSuiteFinished name='{0}']", Escape(result.FullName));
 		}
 
 		public void UnhandledException(Exception exception)

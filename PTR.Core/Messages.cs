@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
+using Newtonsoft.Json;
 using NUnit.Core;
 using PTR.Core.NUnit;
 using PTR.Core.Reporters;
@@ -110,9 +111,10 @@ namespace PTR.Core
 	public class RunFinished
 	{
 		public Exception Exception { get; private set; }
-		public TestResult Result { get; private set; }
+		public TestEvent Result { get; private set; }
 
-		public RunFinished(TestResult result)
+		[JsonConstructor]
+		public RunFinished(TestEvent result)
 		{
 			Result = result;
 		}
@@ -135,9 +137,9 @@ namespace PTR.Core
 
 	public class TestFinished
 	{
-		public TestResult Result { get; private set; }
+		public TestEvent Result { get; private set; }
 
-		public TestFinished(TestResult result)
+		public TestFinished(TestEvent result)
 		{
 			Result = result;
 		}
@@ -155,9 +157,9 @@ namespace PTR.Core
 
 	public class SuiteFinished
 	{
-		public TestResult Result { get; private set; }
+		public TestEvent Result { get; private set; }
 
-		public SuiteFinished(TestResult result)
+		public SuiteFinished(TestEvent result)
 		{
 			Result = result;
 		}
