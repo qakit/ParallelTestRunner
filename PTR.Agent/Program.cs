@@ -33,7 +33,14 @@ namespace PTR.Agent
 					"RemoteSystem",
 					"localhost",
 					selfPort);
+
 				var masterSelection = system.ActorSelection(masterAddress);
+
+				bool isMasterFound;
+				do
+				{
+					isMasterFound = IsResolveSuccess(() => masterSelection.ResolveOne(TimeSpan.FromSeconds(1)).Wait());
+				} while (!isMasterFound);
 
 				masterSelection.Tell(new RegisterTestActor(selfAddress));
 				Console.ReadKey();
@@ -45,6 +52,19 @@ namespace PTR.Agent
 			var host = Dns.GetHostEntry(Dns.GetHostName());
 			var ip = host.AddressList.FirstOrDefault(a => a.AddressFamily.ToString() == "InterNetwork");
 			return ip != null ? ip.ToString() : "127.0.0.1";
+		}
+
+		private static bool IsResolveSuccess(Action resolveAction)
+		{
+			try
+			{
+				resolveAction();
+				return true;
+			}
+			catch (Exception e)
+			{
+				return false;
+			}
 		}
 	}
 }
