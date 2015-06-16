@@ -10,7 +10,8 @@ namespace PTR.Core.Actors
 	{
 		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
 		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
-		private readonly HashSet<IActorRef> _workers = new HashSet<IActorRef>();
+		private readonly IDictionary<string, IActorRef> _workers = new Dictionary<string, IActorRef>();
+		private readonly IDictionary<Address, string> _remoteWorkersInfo = new Dictionary<Address, string>(); 
 		
 		public TestCoordinator()
 		{
@@ -23,21 +24,20 @@ namespace PTR.Core.Actors
 			{
 				Console.WriteLine("Registering new worker {0}", msg.TestActorPath);
 				var workerAddress = Address.Parse(msg.TestActorPath);
-				var newWorker =
-					Context.ActorOf(
-						Props.Create(() => new TestExecutor())
-							.WithDeploy(Deploy.None.WithScope(new RemoteScope(workerAddress))), 
-							"TestExecutor" + (_workers.Count + 1));
-				_workers.Add(newWorker);
-				newWorker.Tell(new Greet("Hello from register"));
+				var workerName = string.Format("TestExecutor{0}", _remoteWorkersInfo.Count + 1);
+				
+				_remoteWorkersInfo.Add(workerAddress, workerName);
 			});
 
 			Receive<RunTests>(msg =>
 			{
-//				var executor = Context.ActorOf(Props.Create(() => new TestExecutor()), "TextExecutor");
-//				var executor2 = Context.ActorOf(Props.Create(() => new TestExecutor()), "TextExecutor2");
-//				_workers.Add(executor);
-//				_workers.Add(executor2);
+				foreach (KeyValuePair<Address, string> keyPair in _remoteWorkersInfo)
+				{
+					Props workerProps =
+						Props.Create(() => new TestExecutor()).WithDeploy(Deploy.None.WithScope(new RemoteScope(keyPair.Key)));
+					var worker = Context.ActorOf(workerProps, keyPair.Value);
+					_workers.Add(keyPair.Value, worker);
+				}
 
 				var jobs = Runner.LoadFixtures(msg);
 				foreach (Job job in jobs)
@@ -68,7 +68,7 @@ namespace PTR.Core.Actors
 
 			Receive<JobCompleted>(_ =>
 			{
-				Console.WriteLine((string) "Work is done by {0} actor", (object) Sender.Path.Name);
+				Console.WriteLine("Work is done by {0} actor", Sender.Path.Name);
 				var i = _runningJobs.FindIndex(job => Equals(job.Worker, Sender));
 				if (i >= 0)
 				{
@@ -82,10 +82,11 @@ namespace PTR.Core.Actors
 			{
 				var actor = Sender;
 				Console.WriteLine("-------------------------------------------");
-				Console.WriteLine((string) "Removing actor {0}", (object) actor.Path.Name);
+				Console.WriteLine("Removing actor {0}", actor.Path.Name);
 				Context.Unwatch(actor);
 				Context.Stop(actor);
-				_workers.Remove(actor);
+				var removed = _workers.Remove(actor.Path.Name);
+				var x = 0;
 			});
 		}
 
@@ -99,22 +100,22 @@ namespace PTR.Core.Actors
 				}
 				else
 				{
-					foreach (IActorRef worker in _workers)
+					foreach (var worker in _workers)
 					{
 						if (_runningJobs.Count > 0)
 						{
 							foreach (RunningJob runningJob in _runningJobs)
 							{
-								if (runningJob.Worker == worker)
+								if (Equals(runningJob.Worker, worker.Value))
 								{
 									return;
 								}
-								worker.Tell(NoJob.Instance);
+								worker.Value.Tell(NoJob.Instance);
 							}
 						}
 						else
 						{
-							worker.Tell(NoJob.Instance);
+							worker.Value.Tell(NoJob.Instance);
 						}
 					}
 				}
@@ -126,9 +127,9 @@ namespace PTR.Core.Actors
 				return;
 			}
 
-			foreach (IActorRef worker in _workers)
+			foreach (var worker in _workers)
 			{
-				worker.Tell(JobIsReady.Instance);
+				worker.Value.Tell(JobIsReady.Instance);
 			}
 		}
 
