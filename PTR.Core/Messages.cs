@@ -11,16 +11,18 @@ namespace PTR.Core
 {
 	public sealed class RunTests
 	{
-		public RunTests(string assembly, string[] include, string[] exclude, IActorRef reporterActor)
+		public RunTests(string assembly, string[] include, string[] exclude, IActorRef reporterActor,int numOfLocalWorkers)
 		{
 			Assembly = assembly;
 			ReporterActor = reporterActor;
+			NumOfLocalWorkers = numOfLocalWorkers;
 			Include = FilterCategories(include);
 			Exclude = FilterCategories(exclude);
 		}
 
 		public string Assembly { get; private set; }
 		public IActorRef ReporterActor { get; private set; }
+		public int NumOfLocalWorkers { get; private set; }
 		public string[] Include { get; private set; }
 		public string[] Exclude { get; private set; }
 
@@ -50,6 +52,23 @@ namespace PTR.Core
 		public SetReporter(IReporter reporter)
 		{
 			Reporter = reporter;
+		}
+	}
+
+	public class GetStatus
+	{
+		public static GetStatus Instance = new GetStatus();
+	}
+
+	public class Status
+	{
+		public int RunningJobs { get; private set; }
+		public int QueuedJobs { get; private set; }
+
+		public Status(int runningJobs, int queuedJobs)
+		{
+			RunningJobs = runningJobs;
+			QueuedJobs = queuedJobs;
 		}
 	}
 

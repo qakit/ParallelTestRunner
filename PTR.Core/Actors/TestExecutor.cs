@@ -53,14 +53,8 @@ namespace PTR.Core.Actors
 
 			Receive<NoJob>(msg =>
 			{
-				Console.WriteLine("NO JOB FOR ME. SO I WILL DIE {0}", Self.Path.Name);
 				Sender.Tell(Bye.Instance);
 			});
-		}
-
-		public override void AroundPostStop()
-		{
-			var x = 0;
 		}
 	}
 }

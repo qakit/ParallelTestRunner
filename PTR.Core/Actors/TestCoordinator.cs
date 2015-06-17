@@ -24,7 +24,7 @@ namespace PTR.Core.Actors
 			{
 				Console.WriteLine("Registering new worker {0}", msg.TestActorPath);
 				var workerAddress = Address.Parse(msg.TestActorPath);
-				var workerName = string.Format("TestExecutor{0}", _remoteWorkersInfo.Count + 1);
+				var workerName = string.Format("RemoteTestExecutor{0}", _remoteWorkersInfo.Count + 1);
 				
 				_remoteWorkersInfo.Add(workerAddress, workerName);
 			});
@@ -33,10 +33,20 @@ namespace PTR.Core.Actors
 			{
 				foreach (KeyValuePair<Address, string> keyPair in _remoteWorkersInfo)
 				{
-					Props workerProps =
+					Props workerProp =
 						Props.Create(() => new TestExecutor()).WithDeploy(Deploy.None.WithScope(new RemoteScope(keyPair.Key)));
-					var worker = Context.ActorOf(workerProps, keyPair.Value);
-					_workers.Add(keyPair.Value, worker);
+					var worker = Context.ActorOf(workerProp);
+					_workers.Add(worker.Path.Name, worker);
+				}
+
+				if (msg.NumOfLocalWorkers > 0)
+				{
+					for (int i = 0; i < msg.NumOfLocalWorkers; i++)
+					{
+						Props workerProp = Props.Create(() => new TestExecutor());
+						var worker = Context.ActorOf(workerProp, string.Format("LocalTestExecutor{0}", i + 1));
+						_workers.Add(worker.Path.Name, worker);
+					}
 				}
 
 				var jobs = Runner.LoadFixtures(msg);
@@ -46,6 +56,14 @@ namespace PTR.Core.Actors
 				}
 
 				NotifyJobIsReady();
+			});
+
+			Receive<GetStatus>(msg =>
+			{
+				if (_workers.Count == 0)
+					Sender.Tell(new Status(0, 0));
+				else
+					Sender.Tell(new Status(_runningJobs.Count, _jobQueue.Count));
 			});
 
 			Receive<RequestJob>(msg =>
@@ -80,13 +98,10 @@ namespace PTR.Core.Actors
 
 			Receive<Bye>(msg =>
 			{
-				var actor = Sender;
-				Console.WriteLine("-------------------------------------------");
-				Console.WriteLine("Removing actor {0}", actor.Path.Name);
-				Context.Unwatch(actor);
-				Context.Stop(actor);
-				var removed = _workers.Remove(actor.Path.Name);
-				var x = 0;
+				Console.WriteLine("Worker {0} has been killed", Sender.Path.Name);
+				_workers.Remove(Sender.Path.Name);
+				Context.Unwatch(Sender);
+				Context.Stop(Sender);
 			});
 		}
 
@@ -132,19 +147,19 @@ namespace PTR.Core.Actors
 				worker.Value.Tell(JobIsReady.Instance);
 			}
 		}
-
-		protected override SupervisorStrategy SupervisorStrategy()
-		{
-			return new OneForOneStrategy(
-				maxNrOfRetries: 10, 
-				withinTimeRange: TimeSpan.FromSeconds(30),
-				localOnlyDecider: x =>
-				{
-					//TODO complete code here
-					if(x is NotImplementedException)
-						return Directive.Resume;
-					else return Directive.Restart;
-				});
-		}
+//
+//		protected override SupervisorStrategy SupervisorStrategy()
+//		{
+//			return new OneForOneStrategy(
+//				maxNrOfRetries: 10, 
+//				withinTimeRange: TimeSpan.FromSeconds(30),
+//				localOnlyDecider: x =>
+//				{
+//					//TODO complete code here
+//					if(x is NotImplementedException)
+//						return Directive.Resume;
+//					else return Directive.Restart;
+//				});
+//		}
 	}
 }

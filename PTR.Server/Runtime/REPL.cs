@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using PTR.Core;
 using PTR.Core.Extensions;
@@ -25,6 +26,8 @@ namespace PTR.Server
 				case "run":
 					var include = cmd.Options.Get("include", "").Split(',', ';');
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
+					int numOfLocalWorkers = cmd.Options.Get("localrun", 1);
+
 					IReporter reporter = cmd.Options.Get("teamcity", false) ? (IReporter) new TeamCityReporter() : new ConsoleReporter();
 					TestReporter.Tell(new SetReporter(reporter));
 
@@ -35,7 +38,8 @@ namespace PTR.Server
 						break;
 					}
 
-					Manager.Tell(new RunTests(path, include, exclude, TestReporter));
+					Manager.Tell(new RunTests(path, include, exclude, TestReporter, numOfLocalWorkers));
+					WaitTaskCompleted().Wait();
 					break;
 				default:
 					PrintHelp();
@@ -45,13 +49,33 @@ namespace PTR.Server
 			return true;
 		}
 
+		private static async Task WaitTaskCompleted()
+		{
+			while (true)
+			{
+				await Task.Delay(TimeSpan.FromSeconds(1));
+
+				try
+				{
+					var status = await Manager.Ask<Core.Status>(GetStatus.Instance, TimeSpan.FromSeconds(1));
+					if(status.RunningJobs == 0 && status.QueuedJobs == 0)
+						return;
+				}
+				catch (Exception e)
+				{
+					
+				}
+			}
+		}
+
 		private static void PrintHelp()
 		{
 			//TODO make better help output;
 			Console.WriteLine("run - Run tests in specified assembly. Sample usage: run tests.dll");
-			Console.WriteLine("--include - Include specified category in test run. If specified other categories will be omitted. Sample usage: --include=TestCategory");
-			Console.WriteLine("--exclude - Exclude specified category from test run. If specified all categories will be runned except this one. Sample usage: --exclude=TestCategory");
+			Console.WriteLine("--include=<category1, category2> - Include specified category in test run. If specified other categories will be omitted. Sample usage: --include=TestCategory");
+			Console.WriteLine("--exclude=<category3, category4> - Exclude specified category from test run. If specified all categories will be runned except this one. Sample usage: --exclude=TestCategory");
 			Console.WriteLine("--teamcity - Enable reporting in teamcity style. Default is console reporting. Sample usage: --teamcity");
+			Console.WriteLine("--localrun=<numOfLocalWorkers> - Allow server use local workers to run. <numOfLocalWorkers> specified number of local workers to be runned during test's execution: Sample usage: --localrun=2");
 			Console.WriteLine("q[uit] | exit - Stops PTR server;");
 		}
 	}
