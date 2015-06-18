@@ -24,7 +24,7 @@ namespace PTR.Core.Actors
 				Console.WriteLine(msg.Message);
 			});
 
-			Receive<Job>(msg =>
+			Receive<Task>(msg =>
 			{
 				if (_busy)
 				{
@@ -36,7 +36,7 @@ namespace PTR.Core.Actors
 				var self = Self;
 				var reporter = new RemoteReporter(msg.ReporterActor);
 
-				Task.Run(() =>
+				System.Threading.Tasks.Task.Run(() =>
 				{
 					_busy = true;
 					Runner.Run(msg, reporter);

@@ -1,18 +1,37 @@
-﻿using Akka.Actor;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Akka.Actor;
 
 namespace PTR.Core
 {
+	public enum Distrubution
+	{
+		Even,
+		Single
+	}
+
 	public sealed class Job
 	{
-		public Job(string assembly, string testFixture, IActorRef reporterActor)
+		public Job(string[] include, string[] exclude)
 		{
-			Assembly = assembly;
-			TestFixture = testFixture;
-			ReporterActor = reporterActor;
+			Include = FilterCategories(include);
+			Exclude = FilterCategories(exclude);
 		}
+		
+		public string[] Include { get; private set; }
+		public string[] Exclude { get; private set; }
+		public int LocalWorkers { get; set; }
+		public Distrubution Distrubution { get; set; }
+		public IActorRef Reporter { get; set; }
+		public string AssemblyPath { get; set; }
 
-		public string Assembly { get; private set; }
-		public string TestFixture { get; private set; }
-		public IActorRef ReporterActor { get; private set; }
+
+		private static string[] FilterCategories(IEnumerable<string> input)
+		{
+			return (from s in input ?? Enumerable.Empty<string>()
+					let s2 = (s ?? "").Trim()
+					where !string.IsNullOrEmpty(s2)
+					select s2).ToArray();
+		}
 	}
 }

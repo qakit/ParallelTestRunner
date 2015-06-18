@@ -76,10 +76,12 @@
     <Compile Include="Actors\TestReporter.cs" />
     <Compile Include="Extensions\CommandLine.cs" />
     <Compile Include="Extensions\HoconExtensions.cs" />
+    <Compile Include="Extensions\LinqExtensions.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Extensions\ReflectionExtensions.cs" />
     <Compile Include="Extensions\XmlExtensions.cs" />
     <Compile Include="Job.cs" />
+    <Compile Include="Task.cs" />
     <Compile Include="Messages.cs" />
     <Compile Include="NUnit\EventKind.cs" />
     <Compile Include="NUnit\NUnitEventListener.cs" />

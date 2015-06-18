@@ -5,12 +5,12 @@ namespace PTR.Core
 	internal class RunningJob
 	{
 		public readonly IActorRef Worker;
-		public readonly Job Job;
+		public readonly Task Task;
 
-		public RunningJob(IActorRef worker, Job job)
+		public RunningJob(IActorRef worker, Task task)
 		{
 			Worker = worker;
-			Job = job;
+			Task = task;
 		}
 	}
 }

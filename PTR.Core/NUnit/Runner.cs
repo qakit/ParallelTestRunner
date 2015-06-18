@@ -14,20 +14,28 @@ namespace PTR.Core.NUnit
 {
 	internal static class Runner
 	{
-		public static IEnumerable<Job> LoadFixtures(RunTests run)
+		public static IEnumerable<Task> LoadFixtures(Job job, int workersCount)
 		{
-			var assembly = Assembly.LoadFrom(run.Assembly);
-
+			var assembly = Assembly.LoadFrom(job.AssemblyPath);
 			var fixtures = from t in assembly.GetTypes()
 						   where t.HasAttribute<TestFixtureAttribute>()
 						   let cat = t.GetAttribute<CategoryAttribute>().IfNotNull(a => a.Name) ?? string.Empty
-						   where cat.In(run.Include) && cat.NotIn(run.Exclude)
-						   select t;
+						   where cat.In(job.Include) && cat.NotIn(job.Exclude)
+						   select t; ;
 
-			return (from type in fixtures select new Job(run.Assembly, type.FullName, run.ReporterActor)).ToList();
+			if (job.Distrubution == Distrubution.Even)
+			{
+				return (from fixture in fixtures.Split(workersCount) 
+						select new Task(
+							job.AssemblyPath, 
+							(from type in fixture.ToArray() select type.FullName).ToArray(), 
+							job.Reporter)).ToList();
+			}
+
+			return (from type in fixtures select new Task(job.AssemblyPath, new[] { type.FullName }, job.Reporter)).ToList();
 		}
 
-		public static void Run(Job job, IReporter reporter)
+		public static void Run(Task task, IReporter reporter)
 		{
 			ServiceManager.Services.AddService(new DomainManager());
 			ServiceManager.Services.AddService(new ProjectService());
@@ -41,9 +49,9 @@ namespace PTR.Core.NUnit
 				Console.WriteLine("exception occurs");
 			}
 
-			var assemblyDir = Path.GetDirectoryName(job.Assembly);
+			var assemblyDir = Path.GetDirectoryName(task.Assembly);
 
-			var testPackage = new TestPackage(job.Assembly);
+			var testPackage = new TestPackage(task.Assembly);
 			testPackage.Settings["ProcessModel"] = ProcessModel.Single;
 			testPackage.Settings["DomainUsage"] = DomainUsage.Single;
 			testPackage.Settings["ShadowCopyFiles"] = false;
@@ -57,7 +65,7 @@ namespace PTR.Core.NUnit
 			{
 				var listener = new NUnitEventListener(reporter);
 
-				var filter = new SimpleNameFilter(job.TestFixture);
+				var filter = new SimpleNameFilter(task.TestFixtures);
 
 				var runnerFactory = new DefaultTestRunnerFactory();
 				using (var runner = runnerFactory.MakeTestRunner(testPackage))

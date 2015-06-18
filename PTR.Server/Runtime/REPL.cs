@@ -8,6 +8,7 @@ using PTR.Core.Extensions;
 using PTR.Core.Reporters;
 using PTR.Server.Runtime;
 using Status = PTR.Core.Status;
+using Task = System.Threading.Tasks.Task;
 
 namespace PTR.Server
 {
@@ -28,6 +29,11 @@ namespace PTR.Server
 					var include = cmd.Options.Get("include", "").Split(',', ';');
 					var exclude = cmd.Options.Get("exclude", "").Split(',', ';');
 					int numOfLocalWorkers = cmd.Options.Get("localrun", 1);
+					//get distribution value
+					var distValue = cmd.Options.Get("dist", "single");
+					var distribution = string.Equals(distValue, "even", StringComparison.InvariantCultureIgnoreCase)
+						? Distrubution.Even
+						: Distrubution.Single;
 
 					IReporter reporter = cmd.Options.Get("teamcity", false) ? (IReporter) new TeamCityReporter() : new ConsoleReporter();
 					TestReporter.Tell(new SetReporter(reporter));
@@ -39,7 +45,15 @@ namespace PTR.Server
 						break;
 					}
 
-					Manager.Tell(new RunTests(path, include, exclude, TestReporter, numOfLocalWorkers));
+					var job = new Job(include, exclude)
+					{
+						LocalWorkers = numOfLocalWorkers,
+						Distrubution = distribution,
+						Reporter = TestReporter,
+						AssemblyPath = path
+					};
+
+					Manager.Tell(job);
 					WaitTaskCompleted().Wait();
 					break;
 				default:
@@ -77,6 +91,7 @@ namespace PTR.Server
 			Console.WriteLine("--exclude=<category3, category4> - Exclude specified category from test run. If specified all categories will be runned except this one. Sample usage: --exclude=TestCategory");
 			Console.WriteLine("--teamcity - Enable reporting in teamcity style. Default is console reporting. Sample usage: --teamcity");
 			Console.WriteLine("--localrun=<numOfLocalWorkers> - Allow server use local workers to run. <numOfLocalWorkers> specified number of local workers to be runned during test's execution: Sample usage: --localrun=2");
+			Console.WriteLine("--dist=<Even, Single> - set tests distribution level for actors. Even - all testfixtures will be distributed evenly, otherwise by request (one fixture to one actor)");
 			Console.WriteLine("q[uit] | exit - Stops PTR server;");
 		}
 	}

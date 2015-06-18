@@ -8,7 +8,7 @@ namespace PTR.Core.Actors
 {
 	public class TestCoordinator : ReceiveActor
 	{
-		private readonly ConcurrentQueue<Job> _jobQueue = new ConcurrentQueue<Job>();
+		private readonly ConcurrentQueue<Task> _jobQueue = new ConcurrentQueue<Task>();
 		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
 		private readonly IDictionary<string, IActorRef> _workers = new Dictionary<string, IActorRef>();
 		private readonly IDictionary<Address, string> _remoteWorkersInfo = new Dictionary<Address, string>(); 
@@ -29,7 +29,7 @@ namespace PTR.Core.Actors
 				_remoteWorkersInfo.Add(workerAddress, workerName);
 			});
 
-			Receive<RunTests>(msg =>
+			Receive<Job>(msg =>
 			{
 				foreach (KeyValuePair<Address, string> keyPair in _remoteWorkersInfo)
 				{
@@ -39,9 +39,9 @@ namespace PTR.Core.Actors
 					_workers.Add(worker.Path.Name, worker);
 				}
 
-				if (msg.NumOfLocalWorkers > 0)
+				if (msg.LocalWorkers > 0)
 				{
-					for (int i = 0; i < msg.NumOfLocalWorkers; i++)
+					for (int i = 0; i < msg.LocalWorkers; i++)
 					{
 						Props workerProp = Props.Create(() => new TestExecutor());
 						var worker = Context.ActorOf(workerProp, string.Format("LocalTestExecutor{0}", i + 1));
@@ -49,10 +49,13 @@ namespace PTR.Core.Actors
 					}
 				}
 
-				var jobs = Runner.LoadFixtures(msg);
-				foreach (Job job in jobs)
+				if (_workers.Count > 0)
 				{
-					_jobQueue.Enqueue(job);
+					var jobs = Runner.LoadFixtures(msg, _workers.Count);
+					foreach (Task job in jobs)
+					{
+						_jobQueue.Enqueue(job);
+					}
 				}
 
 				NotifyJobIsReady();
@@ -80,11 +83,11 @@ namespace PTR.Core.Actors
 				var sender = Sender;
 				var self = Self;
 
-				Job job;
-				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out job))
+				Task task;
+				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out task))
 				{
-					_runningJobs.Add(new RunningJob(sender, job));
-					sender.Tell(job, self);
+					_runningJobs.Add(new RunningJob(sender, task));
+					sender.Tell(task, self);
 				}
 				else
 				{

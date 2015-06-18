@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Newtonsoft.Json;
 using NUnit.Core;
@@ -10,32 +9,6 @@ using PTR.Core.Reporters;
 
 namespace PTR.Core
 {
-	public sealed class RunTests
-	{
-		public RunTests(string assembly, string[] include, string[] exclude, IActorRef reporterActor,int numOfLocalWorkers)
-		{
-			Assembly = assembly;
-			ReporterActor = reporterActor;
-			NumOfLocalWorkers = numOfLocalWorkers;
-			Include = FilterCategories(include);
-			Exclude = FilterCategories(exclude);
-		}
-
-		public string Assembly { get; private set; }
-		public IActorRef ReporterActor { get; private set; }
-		public int NumOfLocalWorkers { get; private set; }
-		public string[] Include { get; private set; }
-		public string[] Exclude { get; private set; }
-
-		private static string[] FilterCategories(IEnumerable<string> input)
-		{
-			return (from s in input ?? Enumerable.Empty<string>()
-					let s2 = (s ?? "").Trim()
-					where !string.IsNullOrEmpty(s2)
-					select s2).ToArray();
-		}
-	}
-
 	public class RegisterTestActor
 	{
 		public string TestActorPath { get; private set; }
