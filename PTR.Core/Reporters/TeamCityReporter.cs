@@ -7,20 +7,11 @@ namespace PTR.Core.Reporters
 {
 	public class TeamCityReporter : MarshalByRefObject, IReporter
 	{
-		public void RunStarted(string name, int testCount)
-		{
-			
-		}
+		public void RunStarted(string name, int testCount) { }
 
-		public void RunFinished(TestEvent result)
-		{
-			
-		}
+		public void RunFinished(TestEvent result) { }
 
-		public void RunFinished(Exception exception)
-		{
-			
-		}
+		public void RunFinished(Exception exception) { }
 
 		public void TestStarted(TestName testName)
 		{
@@ -52,23 +43,17 @@ namespace PTR.Core.Reporters
 
 		public void SuiteStarted(TestName testName)
 		{
-			Console.WriteLine("##teamcity[testSuiteStarted name='{0}']", Escape(testName.FullName));
+//			Console.WriteLine("##teamcity[testSuiteStarted name='{0}']", Escape(testName.FullName));
 		}
 
 		public void SuiteFinished(TestEvent result)
 		{
-			Console.WriteLine("##teamcity[testSuiteFinished name='{0}']", Escape(result.FullName));
+//			Console.WriteLine("##teamcity[testSuiteFinished name='{0}']", Escape(result.FullName));
 		}
 
-		public void UnhandledException(Exception exception)
-		{
-			
-		}
+		public void UnhandledException(Exception exception) { }
 
-		public void TestOutput(global::NUnit.Core.TestOutput testOutput)
-		{
-			
-		}
+		public void TestOutput(global::NUnit.Core.TestOutput testOutput) { }
 
 		#region Helpers
 
