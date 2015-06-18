@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
 using PTR.Core;
 using PTR.Core.Extensions;
+using PTR.Core.Messages;
 using PTR.Core.Reporters;
 using PTR.Server.Runtime;
-using Status = PTR.Core.Status;
+using Status = PTR.Core.Messages.Status;
 using Task = System.Threading.Tasks.Task;
 
 namespace PTR.Server

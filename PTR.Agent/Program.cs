@@ -4,8 +4,8 @@ using System.Linq;
 using System.Net;
 using Akka.Actor;
 using Akka.Configuration.Hocon;
-using PTR.Core;
 using PTR.Core.Extensions;
+using PTR.Core.Messages;
 
 namespace PTR.Agent
 {

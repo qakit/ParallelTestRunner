@@ -1,7 +1,6 @@
-using System;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Event;
+using PTR.Core.Messages;
 using PTR.Core.NUnit;
 using PTR.Core.Reporters;
 
@@ -19,11 +18,6 @@ namespace PTR.Core.Actors
 
 		private void Idle()
 		{
-			Receive<Greet>(msg =>
-			{
-				Console.WriteLine(msg.Message);
-			});
-
 			Receive<Task>(msg =>
 			{
 				if (_busy)

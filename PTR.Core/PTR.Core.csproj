@@ -81,8 +81,10 @@
     <Compile Include="Extensions\ReflectionExtensions.cs" />
     <Compile Include="Extensions\XmlExtensions.cs" />
     <Compile Include="Job.cs" />
+    <Compile Include="Messages\CoordinatorMessages.cs" />
+    <Compile Include="Messages\ExecutorMessages.cs" />
+    <Compile Include="Messages\TeamCityMessages.cs" />
     <Compile Include="Task.cs" />
-    <Compile Include="Messages.cs" />
     <Compile Include="NUnit\EventKind.cs" />
     <Compile Include="NUnit\NUnitEventListener.cs" />
     <Compile Include="NUnit\Runner.cs" />

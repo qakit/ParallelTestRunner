@@ -2,7 +2,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Akka.Actor;
+using PTR.Core.Messages;
 using PTR.Core.NUnit;
+using Status = PTR.Core.Messages.Status;
 
 namespace PTR.Core.Actors
 {

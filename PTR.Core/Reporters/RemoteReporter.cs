@@ -1,7 +1,9 @@
 using System;
 using Akka.Actor;
 using NUnit.Core;
+using PTR.Core.Messages;
 using PTR.Core.NUnit;
+using TestOutput = PTR.Core.Messages.TestOutput;
 
 namespace PTR.Core.Reporters
 {
