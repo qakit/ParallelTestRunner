@@ -1,0 +1,9 @@
+PTR.Core/bin/*/*
+PTR.Core/obj/*/*
+PTR.Server/bin/*/*
+PTR.Server/obj/*/*
+PTR.Agent/bin/*/*
+PTR.Agent/obj/*/*
+tests/bin/*/*
+tests/obj/*/*
+packages/*/*

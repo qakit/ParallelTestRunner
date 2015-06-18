@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Newtonsoft.Json;
 using NUnit.Core;
@@ -60,16 +61,10 @@ namespace PTR.Core
 		public static GetStatus Instance = new GetStatus();
 	}
 
-	public class Status
+	public enum Status
 	{
-		public int RunningJobs { get; private set; }
-		public int QueuedJobs { get; private set; }
-
-		public Status(int runningJobs, int queuedJobs)
-		{
-			RunningJobs = runningJobs;
-			QueuedJobs = queuedJobs;
-		}
+		Completed,
+		Busy
 	}
 
 	public class JobIsReady

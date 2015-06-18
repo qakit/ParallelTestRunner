@@ -7,6 +7,7 @@ using PTR.Core;
 using PTR.Core.Extensions;
 using PTR.Core.Reporters;
 using PTR.Server.Runtime;
+using Status = PTR.Core.Status;
 
 namespace PTR.Server
 {
@@ -57,8 +58,8 @@ namespace PTR.Server
 
 				try
 				{
-					var status = await Manager.Ask<Core.Status>(GetStatus.Instance, TimeSpan.FromSeconds(1));
-					if(status.RunningJobs == 0 && status.QueuedJobs == 0)
+					var status = await Manager.Ask<Status>(GetStatus.Instance, TimeSpan.FromSeconds(1));
+					if(status == Status.Completed)
 						return;
 				}
 				catch (Exception e)

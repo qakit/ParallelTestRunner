@@ -61,9 +61,17 @@ namespace PTR.Core.Actors
 			Receive<GetStatus>(msg =>
 			{
 				if (_workers.Count == 0)
-					Sender.Tell(new Status(0, 0));
+				{
+					Sender.Tell(Status.Completed);
+				}
+				else if (_runningJobs.Count == 0 && _jobQueue.Count == 0)
+				{
+					Sender.Tell(Status.Completed);
+				}
 				else
-					Sender.Tell(new Status(_runningJobs.Count, _jobQueue.Count));
+				{
+					Sender.Tell(Status.Busy);
+				}
 			});
 
 			Receive<RequestJob>(msg =>
