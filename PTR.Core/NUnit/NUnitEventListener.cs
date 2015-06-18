@@ -53,7 +53,7 @@ namespace PTR.Core.NUnit
 			_reporter.UnhandledException(exception);
 		}
 
-		public void TestOutput(global::NUnit.Core.TestOutput testOutput)
+		public void TestOutput(TestOutput testOutput)
 		{
 			_reporter.TestOutput(testOutput);
 		}
@@ -68,15 +68,6 @@ namespace PTR.Core.NUnit
 				StackTrace = result.StackTrace,
 				Duration = result.Time,
 				FullName = result.Test.TestName.FullName
-			};
-		}
-
-		private TestEvent ConvertToEvent(Exception error, EventKind kind)
-		{
-			return new TestEvent
-			{
-				Kind = kind,
-				Error = error
 			};
 		}
 	}

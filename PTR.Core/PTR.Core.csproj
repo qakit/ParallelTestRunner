@@ -79,7 +79,6 @@
     <Compile Include="Extensions\LinqExtensions.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Extensions\ReflectionExtensions.cs" />
-    <Compile Include="Extensions\XmlExtensions.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Messages\CoordinatorMessages.cs" />
     <Compile Include="Messages\ExecutorMessages.cs" />
