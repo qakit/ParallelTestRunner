@@ -10,8 +10,8 @@ namespace PTR.Core.Actors
 {
 	public class TestCoordinator : ReceiveActor
 	{
-		private readonly ConcurrentQueue<Task> _jobQueue = new ConcurrentQueue<Task>();
-		private readonly List<RunningJob> _runningJobs = new List<RunningJob>();
+		private readonly ConcurrentQueue<Task> _taskQueue = new ConcurrentQueue<Task>();
+		private readonly List<RunningTask> _runningTasks = new List<RunningTask>();
 		private readonly IDictionary<string, IActorRef> _workers = new Dictionary<string, IActorRef>();
 		private readonly IDictionary<Address, string> _remoteWorkersInfo = new Dictionary<Address, string>(); 
 		
@@ -24,6 +24,8 @@ namespace PTR.Core.Actors
 		{
 			Receive<RegisterTestActor>(msg =>
 			{
+				//Handle situation then job is running and we connect new node to server
+				//we need to register it => create => give task;
 				Console.WriteLine("Registering new worker {0}", msg.TestActorPath);
 				var workerAddress = Address.Parse(msg.TestActorPath);
 				var workerName = string.Format("RemoteTestExecutor{0}", _remoteWorkersInfo.Count + 1);
@@ -53,14 +55,14 @@ namespace PTR.Core.Actors
 
 				if (_workers.Count > 0)
 				{
-					var jobs = Runner.LoadFixtures(msg, _workers.Count);
-					foreach (Task job in jobs)
+					var tasks = Runner.LoadFixtures(msg, _workers.Count);
+					foreach (Task job in tasks)
 					{
-						_jobQueue.Enqueue(job);
+						_taskQueue.Enqueue(job);
 					}
 				}
 
-				NotifyJobIsReady();
+				NotifyTaskIsReady();
 			});
 
 			Receive<GetStatus>(msg =>
@@ -69,7 +71,7 @@ namespace PTR.Core.Actors
 				{
 					Sender.Tell(Status.Completed);
 				}
-				else if (_runningJobs.Count == 0 && _jobQueue.Count == 0)
+				else if (_runningTasks.Count == 0 && _taskQueue.Count == 0)
 				{
 					Sender.Tell(Status.Completed);
 				}
@@ -79,34 +81,34 @@ namespace PTR.Core.Actors
 				}
 			});
 
-			Receive<RequestJob>(msg =>
+			Receive<RequestTask>(msg =>
 			{
 				Console.WriteLine("{0} requests a job", Sender.Path.Name);
 				var sender = Sender;
 				var self = Self;
 
 				Task task;
-				if (_jobQueue.Count > 0 && _jobQueue.TryDequeue(out task))
+				if (_taskQueue.Count > 0 && _taskQueue.TryDequeue(out task))
 				{
-					_runningJobs.Add(new RunningJob(sender, task));
+					_runningTasks.Add(new RunningTask(sender, task));
 					sender.Tell(task, self);
 				}
 				else
 				{
-					sender.Tell(NoJob.Instance);
+					sender.Tell(NoTask.Instance);
 				}
 			});
 
-			Receive<JobCompleted>(_ =>
+			Receive<TaskCompleted>(_ =>
 			{
 				Console.WriteLine("Work is done by {0} actor", Sender.Path.Name);
-				var i = _runningJobs.FindIndex(job => Equals(job.Worker, Sender));
+				var i = _runningTasks.FindIndex(job => Equals(job.Worker, Sender));
 				if (i >= 0)
 				{
-					_runningJobs.RemoveAt(i);
+					_runningTasks.RemoveAt(i);
 				}
 
-				NotifyJobIsReady(Sender);
+				NotifyTaskIsReady(Sender);
 			});
 
 			Receive<Bye>(msg =>
@@ -118,32 +120,32 @@ namespace PTR.Core.Actors
 			});
 		}
 
-		private void NotifyJobIsReady(IActorRef current = null)
+		private void NotifyTaskIsReady(IActorRef current = null)
 		{
-			if (_jobQueue.Count <= 0)
+			if (_taskQueue.Count <= 0)
 			{
 				if (current != null)
 				{
-					current.Tell(NoJob.Instance);
+					current.Tell(NoTask.Instance);
 				}
 				else
 				{
 					foreach (var worker in _workers)
 					{
-						if (_runningJobs.Count > 0)
+						if (_runningTasks.Count > 0)
 						{
-							foreach (RunningJob runningJob in _runningJobs)
+							foreach (RunningTask runningTask in _runningTasks)
 							{
-								if (Equals(runningJob.Worker, worker.Value))
+								if (Equals(runningTask.Worker, worker.Value))
 								{
 									return;
 								}
-								worker.Value.Tell(NoJob.Instance);
+								worker.Value.Tell(NoTask.Instance);
 							}
 						}
 						else
 						{
-							worker.Value.Tell(NoJob.Instance);
+							worker.Value.Tell(NoTask.Instance);
 						}
 					}
 				}
@@ -151,28 +153,14 @@ namespace PTR.Core.Actors
 
 			if (current != null)
 			{
-				current.Tell(JobIsReady.Instance);
+				current.Tell(TaskIsReady.Instance);
 				return;
 			}
 
 			foreach (var worker in _workers)
 			{
-				worker.Value.Tell(JobIsReady.Instance);
+				worker.Value.Tell(TaskIsReady.Instance);
 			}
 		}
-//
-//		protected override SupervisorStrategy SupervisorStrategy()
-//		{
-//			return new OneForOneStrategy(
-//				maxNrOfRetries: 10, 
-//				withinTimeRange: TimeSpan.FromSeconds(30),
-//				localOnlyDecider: x =>
-//				{
-//					//TODO complete code here
-//					if(x is NotImplementedException)
-//						return Directive.Resume;
-//					else return Directive.Restart;
-//				});
-//		}
 	}
 }

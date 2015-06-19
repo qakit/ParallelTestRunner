@@ -13,14 +13,14 @@ namespace PTR.Core.Messages
 		Busy
 	}
 
-	public class JobIsReady
+	public class TaskIsReady
 	{
-		public static readonly JobIsReady Instance = new JobIsReady();
+		public static readonly TaskIsReady Instance = new TaskIsReady();
 	}
 
-	public class NoJob
+	public class NoTask
 	{
-		public static readonly NoJob Instance = new NoJob();
+		public static readonly NoTask Instance = new NoTask();
 	}
 
 	/// <summary>

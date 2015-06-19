@@ -10,9 +10,9 @@
 		}
 	}
 
-	public class RequestJob
+	public class RequestTask
 	{
-		public static readonly RequestJob Instance = new RequestJob();
+		public static readonly RequestTask Instance = new RequestTask();
 	}
 
 	public class Busy
@@ -20,9 +20,9 @@
 		public static readonly Busy Instance = new Busy();
 	}
 
-	public class JobCompleted
+	public class TaskCompleted
 	{
-		public static readonly JobCompleted Instance = new JobCompleted();
+		public static readonly TaskCompleted Instance = new TaskCompleted();
 	}
 
 	public class Bye

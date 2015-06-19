@@ -93,7 +93,7 @@
     <Compile Include="Reporters\IReporter.cs" />
     <Compile Include="Reporters\RemoteReporter.cs" />
     <Compile Include="Reporters\TeamCityReporter.cs" />
-    <Compile Include="RunningJob.cs" />
+    <Compile Include="RunningTask.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

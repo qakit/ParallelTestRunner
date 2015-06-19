@@ -36,16 +36,16 @@ namespace PTR.Core.Actors
 					Runner.Run(msg, reporter);
 					_busy = false;
 
-					sender.Tell(JobCompleted.Instance, self);
+					sender.Tell(TaskCompleted.Instance, self);
 				});
 			});
 
-			Receive<JobIsReady>(msg =>
+			Receive<TaskIsReady>(msg =>
 			{
-				Sender.Tell(RequestJob.Instance);
+				Sender.Tell(RequestTask.Instance);
 			});
 
-			Receive<NoJob>(msg =>
+			Receive<NoTask>(msg =>
 			{
 				Sender.Tell(Bye.Instance);
 			});

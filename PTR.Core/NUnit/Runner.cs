@@ -32,7 +32,11 @@ namespace PTR.Core.NUnit
 							job.Reporter)).ToList();
 			}
 
-			return (from type in fixtures select new Task(job.AssemblyPath, new[] { type.FullName }, job.Reporter)).ToList();
+			return (from type in fixtures 
+					select new Task(
+						job.AssemblyPath, 
+						new[] { type.FullName }, 
+						job.Reporter)).ToList();
 		}
 
 		public static void Run(Task task, IReporter reporter)
