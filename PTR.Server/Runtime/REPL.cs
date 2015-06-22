@@ -35,6 +35,11 @@ namespace PTR.Server
 						? Distrubution.Even
 						: Distrubution.Single;
 
+					var runModeValue = cmd.Options.Get("mode", "inprocess");
+					var runMode = string.Equals(runModeValue, "separate", StringComparison.InvariantCultureIgnoreCase)
+						? RunningMode.Separate
+						: RunningMode.Inprocess;
+
 					IReporter reporter = cmd.Options.Get("teamcity", false) ? (IReporter) new TeamCityReporter() : new ConsoleReporter();
 					TestReporter.Tell(new SetReporter(reporter));
 
@@ -45,9 +50,14 @@ namespace PTR.Server
 						break;
 					}
 
-					var job = new Job(include, exclude)
+					Manager.Tell(new Init
 					{
 						LocalWorkers = numOfLocalWorkers,
+						RunningMode = runMode,
+					});
+
+					var job = new Job(include, exclude)
+					{
 						Distrubution = distribution,
 						Reporter = TestReporter,
 						AssemblyPath = path

@@ -75,6 +75,7 @@
     <Compile Include="Actors\TestCoordinator.cs" />
     <Compile Include="Actors\TestExecutor.cs" />
     <Compile Include="Actors\TestReporter.cs" />
+    <Compile Include="AgentProcess.cs" />
     <Compile Include="Extensions\CommandLine.cs" />
     <Compile Include="Extensions\HoconExtensions.cs" />
     <Compile Include="Extensions\LinqExtensions.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="Reporters\RemoteReporter.cs" />
     <Compile Include="Reporters\TeamCityReporter.cs" />
     <Compile Include="RunningTask.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

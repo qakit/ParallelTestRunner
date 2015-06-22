@@ -10,6 +10,12 @@ namespace PTR.Core
 		Single
 	}
 
+	public enum RunningMode
+	{
+		Inprocess,
+		Separate
+	}
+
 	public sealed class Job
 	{
 		public Job(string[] include, string[] exclude)
@@ -20,11 +26,9 @@ namespace PTR.Core
 		
 		public string[] Include { get; private set; }
 		public string[] Exclude { get; private set; }
-		public int LocalWorkers { get; set; }
 		public Distrubution Distrubution { get; set; }
 		public IActorRef Reporter { get; set; }
 		public string AssemblyPath { get; set; }
-
 
 		private static string[] FilterCategories(IEnumerable<string> input)
 		{

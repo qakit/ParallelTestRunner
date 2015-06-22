@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Akka.Actor;
 using Akka.Event;
 using PTR.Core.Messages;
@@ -20,19 +22,20 @@ namespace PTR.Core.Actors
 		{
 			Receive<Task>(msg =>
 			{
+				Console.WriteLine("Assembly {0} to run with {1} fixtures received", Path.GetFileNameWithoutExtension(msg.Assembly), msg.TestFixtures.Length);
 				if (_busy)
 				{
 					Sender.Tell(Busy.Instance);
 					return;
 				}
 
+				_busy = true;
 				var sender = Sender;
 				var self = Self;
 				var reporter = new RemoteReporter(msg.ReporterActor);
 
 				System.Threading.Tasks.Task.Run(() =>
 				{
-					_busy = true;
 					Runner.Run(msg, reporter);
 					_busy = false;
 
@@ -42,12 +45,31 @@ namespace PTR.Core.Actors
 
 			Receive<TaskIsReady>(msg =>
 			{
-				Sender.Tell(RequestTask.Instance);
+				if (_busy)
+				{
+					Sender.Tell(Busy.Instance);
+				}
+				else
+				{
+					Sender.Tell(RequestTask.Instance);
+				}
 			});
 
 			Receive<NoTask>(msg =>
 			{
-				Sender.Tell(Bye.Instance);
+				if (_busy)
+				{
+					Sender.Tell(Busy.Instance);
+				}
+				else
+				{
+					Sender.Tell(Bye.Instance);
+				}
+			});
+
+			Receive<Greet>(msg =>
+			{
+				Console.WriteLine(msg.Message);
 			});
 		}
 	}

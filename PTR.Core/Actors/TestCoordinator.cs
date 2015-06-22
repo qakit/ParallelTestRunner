@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Akka.Actor;
 using PTR.Core.Messages;
 using PTR.Core.NUnit;
@@ -10,11 +12,19 @@ namespace PTR.Core.Actors
 {
 	public class TestCoordinator : ReceiveActor
 	{
+		private class AgentInfo
+		{
+			public Address Address;
+			public string Name;
+			public IActorRef Actor;
+		}
+
 		private readonly ConcurrentQueue<Task> _taskQueue = new ConcurrentQueue<Task>();
 		private readonly List<RunningTask> _runningTasks = new List<RunningTask>();
 		private readonly IDictionary<string, IActorRef> _workers = new Dictionary<string, IActorRef>();
-		private readonly IDictionary<Address, string> _remoteWorkersInfo = new Dictionary<Address, string>(); 
-		
+		private readonly List<AgentInfo> _remoteWorkersInfo = new List<AgentInfo>();
+		private readonly List<AgentProcess> ProcessList = new List<AgentProcess>(); 
+
 		public TestCoordinator()
 		{
 			Become(Idle);
@@ -29,46 +39,47 @@ namespace PTR.Core.Actors
 				Console.WriteLine("Registering new worker {0}", msg.TestActorPath);
 				var workerAddress = Address.Parse(msg.TestActorPath);
 				var workerName = string.Format("RemoteTestExecutor{0}", _remoteWorkersInfo.Count + 1);
-				
-				_remoteWorkersInfo.Add(workerAddress, workerName);
-				if (_taskQueue.Count > 0)
+				_remoteWorkersInfo.Add(new AgentInfo
 				{
-					//TODO Extract to separate method as it repeated in few places;
-					Props workerProp =
-						Props.Create(() => new TestExecutor()).WithDeploy(Deploy.None.WithScope(new RemoteScope(workerAddress)));
-					var worker = Context.ActorOf(workerProp);
-					_workers.Add(worker.Path.Name, worker);
-					worker.Tell(TaskIsReady.Instance);
+					Address = workerAddress,
+					Name = workerName
+				});
+
+				if (_taskQueue.Any())
+				{
+					CreateRemoteWorkers();
+					NotifyTaskIsReady();
+				}
+			});
+
+			Receive<Init>(msg =>
+			{
+				if (msg.LocalWorkers > 0)
+				{
+					if (msg.RunningMode == RunningMode.Inprocess)
+					{
+						for (int i = 0; i < msg.LocalWorkers; i++)
+						{
+							Props workerProp = Props.Create(() => new TestExecutor());
+							var worker = Context.ActorOf(workerProp, string.Format("LocalTestExecutor{0}", i + 1));
+							_workers.Add(worker.Path.Name, worker);
+						}
+					}
+					else
+					{
+						StartAgent(msg.LocalWorkers);
+					}
 				}
 			});
 
 			Receive<Job>(msg =>
 			{
-				foreach (KeyValuePair<Address, string> keyPair in _remoteWorkersInfo)
+				CreateRemoteWorkers();
+				
+				var tasks = Runner.LoadFixtures(msg, _workers.Count);
+				foreach (Task job in tasks)
 				{
-					Props workerProp =
-						Props.Create(() => new TestExecutor()).WithDeploy(Deploy.None.WithScope(new RemoteScope(keyPair.Key)));
-					var worker = Context.ActorOf(workerProp);
-					_workers.Add(worker.Path.Name, worker);
-				}
-
-				if (msg.LocalWorkers > 0)
-				{
-					for (int i = 0; i < msg.LocalWorkers; i++)
-					{
-						Props workerProp = Props.Create(() => new TestExecutor());
-						var worker = Context.ActorOf(workerProp, string.Format("LocalTestExecutor{0}", i + 1));
-						_workers.Add(worker.Path.Name, worker);
-					}
-				}
-
-				if (_workers.Count > 0)
-				{
-					var tasks = Runner.LoadFixtures(msg, _workers.Count);
-					foreach (Task job in tasks)
-					{
-						_taskQueue.Enqueue(job);
-					}
+					_taskQueue.Enqueue(job);
 				}
 
 				NotifyTaskIsReady();
@@ -76,11 +87,7 @@ namespace PTR.Core.Actors
 
 			Receive<GetStatus>(msg =>
 			{
-				if (_workers.Count == 0)
-				{
-					Sender.Tell(Status.Completed);
-				}
-				else if (_runningTasks.Count == 0 && _taskQueue.Count == 0)
+				if (_runningTasks.Count == 0 && _taskQueue.Count == 0)
 				{
 					Sender.Tell(Status.Completed);
 				}
@@ -126,7 +133,63 @@ namespace PTR.Core.Actors
 				_workers.Remove(Sender.Path.Name);
 				Context.Unwatch(Sender);
 				Context.Stop(Sender);
+
+				var i = _remoteWorkersInfo.FindIndex(t => t.Actor != null && Equals(t.Actor.Path, Sender.Path));
+				if (i >= 0)
+				{
+					var info = _remoteWorkersInfo[i];
+					info.Actor = null;
+					i = ProcessList.FindIndex(p => p.Address == info.Address);
+					if (i >= 0)
+					{
+						ProcessList[i].Process.Kill();
+						ProcessList.RemoveAt(i);
+					}
+				}
 			});
+		}
+
+		private void CreateRemoteWorkers()
+		{
+			foreach (var info in _remoteWorkersInfo.Where(t => t.Actor == null))
+			{
+				Props workerProp =
+					Props.Create(() => new TestExecutor()).WithDeploy(Deploy.None.WithScope(new RemoteScope(info.Address)));
+				var worker = Context.ActorOf(workerProp);
+				_workers.Add(worker.Path.Name, worker);
+				worker.Tell(new Greet("Connected to server"));
+				info.Actor = worker;
+			}
+		}
+
+		private void StartAgent(int numberOfLocalWorkers)
+		{
+			for (int i = 0; i < numberOfLocalWorkers; i++)
+			{
+				int port = 8091;
+				if (ProcessList.Count > 0)
+				{
+					while (ProcessList.Any(p => p.Port == port))
+					{
+						port++;
+					}
+				}
+				
+				var ip = Utils.GetIpAddress();
+				var cmdArgs = string.Format("--port={0} --ip={1}", port, ip);
+				var process = Process.Start("PTR.Agent.exe", cmdArgs);
+				var address = Address.Parse(string.Format("akka.tcp://{0}@{1}:{2}/",
+					"RemoteSystem",
+					ip,
+					port));
+				
+				ProcessList.Add(new AgentProcess
+				{
+					Port = port,
+					Process = process,
+					Address = address
+				});
+			}
 		}
 
 		private void NotifyTaskIsReady(IActorRef current = null)
@@ -171,5 +234,7 @@ namespace PTR.Core.Actors
 				worker.Value.Tell(TaskIsReady.Instance);
 			}
 		}
+
+
 	}
 }
