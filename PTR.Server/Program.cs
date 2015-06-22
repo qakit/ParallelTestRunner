@@ -29,7 +29,7 @@ namespace PTR.Server
 				//TODO parse args and start actors if necessary;
 				Exec(new Shell.Command(args));
 			}
-			Shell.Run(Exec);
+//			Shell.Run(Exec);
 		}
 	}
 }

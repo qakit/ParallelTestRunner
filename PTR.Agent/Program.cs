@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Configuration;
-using System.Linq;
-using System.Net;
 using Akka.Actor;
 using Akka.Configuration.Hocon;
+using PTR.Agent.Runtime;
 using PTR.Core.Extensions;
 using PTR.Core.Messages;
 
@@ -13,26 +12,28 @@ namespace PTR.Agent
 	{
 		public static void Main(string[] args)
 		{
+			var cmd = new Shell.Command(args);
+
 			//akka.tcp://TestSystem@localhost:8090/user/TestCoordinator
 			HoconRoot config = Parser.Parse(((AkkaConfigurationSection)ConfigurationManager.GetSection("akka")).Hocon.Content);
-			var masterIp = config.Get("akka.remote.helios.tcp.master-path");
-			var masterPort = config.Get("akka.remote.helios.tcp.master-port");
-			
-			var selfIp = GetIpAddress();
-			var selfPort = config.Get("akka.remote.helios.tcp.port");
+
+			var ip = cmd.Options.Get("ip", "localhost");
+			var port = cmd.Options.Get("port", config.Get("akka.remote.helios.tcp.port"));
+			var mIp = cmd.Options.Get("masterIp", config.Get("akka.remote.helios.tcp.master-path"));
+			var mPort = cmd.Options.Get("masterPort",  config.Get("akka.remote.helios.tcp.master-port"));
 
 			using (var system = ActorSystem.Create("RemoteSystem"))
 			{
 				var masterAddress = string.Format("akka.tcp://{0}@{1}:{2}/user/{3}",
 					"TestSystem",
-					masterIp,
-					masterPort,
+					mIp,
+					mPort,
 					"TestCoordinator");
 
 				var selfAddress = string.Format("akka.tcp://{0}@{1}:{2}/",
 					"RemoteSystem",
-					"localhost",
-					selfPort);
+					ip,
+					port);
 
 				var masterSelection = system.ActorSelection(masterAddress);
 
@@ -45,13 +46,6 @@ namespace PTR.Agent
 				masterSelection.Tell(new RegisterTestActor(selfAddress));
 				Console.ReadKey();
 			}
-		}
-
-		private static string GetIpAddress()
-		{
-			var host = Dns.GetHostEntry(Dns.GetHostName());
-			var ip = host.AddressList.FirstOrDefault(a => a.AddressFamily.ToString() == "InterNetwork");
-			return ip != null ? ip.ToString() : "127.0.0.1";
 		}
 
 		private static bool IsResolveSuccess(Action resolveAction)
