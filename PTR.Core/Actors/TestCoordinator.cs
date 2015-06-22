@@ -31,6 +31,15 @@ namespace PTR.Core.Actors
 				var workerName = string.Format("RemoteTestExecutor{0}", _remoteWorkersInfo.Count + 1);
 				
 				_remoteWorkersInfo.Add(workerAddress, workerName);
+				if (_taskQueue.Count > 0)
+				{
+					//TODO Extract to separate method as it repeated in few places;
+					Props workerProp =
+						Props.Create(() => new TestExecutor()).WithDeploy(Deploy.None.WithScope(new RemoteScope(workerAddress)));
+					var worker = Context.ActorOf(workerProp);
+					_workers.Add(worker.Path.Name, worker);
+					worker.Tell(TaskIsReady.Instance);
+				}
 			});
 
 			Receive<Job>(msg =>
