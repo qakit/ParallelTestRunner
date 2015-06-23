@@ -15,6 +15,14 @@ ParallelTestRanner - tool created to add abilily run NUnit tests in parallel usi
 
 Usage
 -----
+###Building and running
+* Clone repository
+* Right-click on solution and select `Enable NuGet Package Restore`
+* Build solution
+* Set PTR.Server project as StartUp project and run it
+
+Here is a simple NUnit tests.dll project, make sure it has been copied to PTR.Server/Bin/Debug folder. In opened console app window type `run tests.dll --localrun=2`. This will run tests in tests.dll on two local actors.
+
 ###Commands
 ####PTR.Server
 * `run` - run tests in specified library. Usage: `run tests.dll`. **Required**;
