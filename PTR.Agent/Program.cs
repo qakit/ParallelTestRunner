@@ -22,7 +22,7 @@ namespace PTR.Agent
 
 			var ip = cmd.Options.Get("ip", Utils.GetIpAddress());
 			var port = cmd.Options.Get("port", hocon.Get("akka.remote.helios.tcp.port"));
-			var masterIp = cmd.Options.Get("masterIp", hocon.Get("akka.remote.helios.tcp.master-path"));
+			var masterIp = cmd.Options.Get("masterIp", hocon.Get("akka.remote.helios.tcp.master-hostname"));
 			var masterPort = cmd.Options.Get("masterPort",  hocon.Get("akka.remote.helios.tcp.master-port"));
 
 			hocon.Set("akka.remote.helios.tcp.hostname", ip);
